@@ -112,41 +112,133 @@ int main(void)
 
   penup();
   HAL_Delay(1000);
-  move(4, 1121, 0);
-  HAL_Delay(1000);
-  move(6, 900, 0);
-  HAL_Delay(1000);
-
-  pendown();
-  HAL_Delay(1000);
-  move(2, 600, 1);
-  HAL_Delay(1000);
-
-  penup();
-  HAL_Delay(1000);
-  move(4, 400, 0);
-  HAL_Delay(1000);
-  move(6, 700, 0);
-  HAL_Delay(1000);
-
-  pendown();
-  HAL_Delay(1000);
-  move(2, 800, 1);
-  HAL_Delay(1000);
-
-  penup();
+  move(4, 871, 0);
   HAL_Delay(1000);
   move(6, 400, 0);
   HAL_Delay(1000);
 
   pendown();
   HAL_Delay(1000);
-  move(4, 1600, 1);
+  move(2, 300, 1);
   HAL_Delay(1000);
 
   penup();
   HAL_Delay(1000);
-  move(0, )
+  move(4, 200, 0);
+  HAL_Delay(1000);
+  move(6, 450, 0);
+  HAL_Delay(1000);
+
+  pendown();
+  HAL_Delay(1000);
+  move(2, 500, 1);
+  HAL_Delay(1000);
+
+  penup();
+  HAL_Delay(1000);
+  move(6, 200, 0);
+  HAL_Delay(1000);
+
+  pendown();
+  HAL_Delay(1000);
+  move(4, 900, 1);
+  HAL_Delay(1000);
+
+  penup();
+  HAL_Delay(1000);
+  move(0, 650, 0);
+  HAL_Delay(1000);
+  move(6, 150, 0);
+  HAL_Delay(1000);
+
+  pendown();
+  HAL_Delay(1000);
+  move(4, 350, 1);
+  HAL_Delay(1000);
+
+  penup();
+  HAL_Delay(1000);
+  move(0, 350, 0);
+  HAL_Delay(1000);
+  move(2, 300, 0);
+  HAL_Delay(1000);
+
+  pendown();
+  HAL_Delay(1000);
+  move(4, 350, 1);
+  HAL_Delay(1000);
+
+  penup();
+  HAL_Delay(1000);
+  move(2, 200, 0);
+  HAL_Delay(1000);
+  move(0, 825, 0);
+  HAL_Delay(1000);
+
+  pendown();
+  HAL_Delay(1000);
+  move(2, 400, 1);
+  HAL_Delay(1000);
+
+  penup();
+  HAL_Delay(1000);
+  move(6, 50, 0);
+  HAL_Delay(1000);
+  move(4, 150, 0);
+  HAL_Delay(1000);
+
+  pendown();
+  HAL_Delay(1000);
+  move(4, 200, 1);
+  HAL_Delay(1000);
+  move(6, 300, 1);
+  HAL_Delay(1000);
+  move(0, 200, 1);
+  HAL_Delay(1000);
+  move(2, 300, 1);
+  HAL_Delay(1000);
+
+  penup();
+  HAL_Delay(1000);
+  move(4, 350, 0);
+  HAL_Delay(1000);
+  move(2, 100, 0);
+  HAL_Delay(1000);
+
+  pendown();
+  HAL_Delay(1000);
+  move(4, 500, 1);
+  HAL_Delay(1000);
+  move(6, 500, 1);
+  HAL_Delay(1000);
+  move(0, 500, 1);
+  HAL_Delay(1000);
+  move(2, 500, 1);
+  HAL_Delay(1000);
+
+  penup();
+  HAL_Delay(1000);
+  move(6, 500, 0);
+  HAL_Delay(1000);
+  move(4, 225, 0);
+  HAL_Delay(1000);
+
+  pendown();
+  HAL_Delay(1000);
+  move(2, 500, 1);
+  HAL_Delay(1000);
+
+  penup();
+  HAL_Delay(1000);
+  move(0, 225, 0);
+  HAL_Delay(1000);
+  move(6, 225, 0);
+  HAL_Delay(1000);
+
+  pendown();
+  HAL_Delay(1000);
+  move(4, 500, 1);
+  HAL_Delay(1000);
 
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET); // disable
   /* USER CODE END 2 */
@@ -251,7 +343,7 @@ void penup()
 {
   uint32_t tick = HAL_GetTick();
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);
-  while (HAL_GetTick() - tick < 50)
+  while (HAL_GetTick() - tick < 100)
   {
     HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_11);
     HAL_Delay(1);
@@ -262,7 +354,7 @@ void pendown()
 {
   uint32_t tick = HAL_GetTick();
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
-  while (HAL_GetTick() - tick < 50)
+  while (HAL_GetTick() - tick < 100)
   {
     HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_11);
     HAL_Delay(1);
