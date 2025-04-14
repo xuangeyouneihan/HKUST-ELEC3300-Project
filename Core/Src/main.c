@@ -49,7 +49,9 @@
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 /* USER CODE BEGIN PFP */
-
+void penup();
+void pendown();
+void move(uint8_t direction, uint32_t time);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -87,13 +89,19 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   /* USER CODE BEGIN 2 */
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_RESET);
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_RESET);
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_13, GPIO_PIN_RESET);
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_11, GPIO_PIN_RESET);
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
-  uint32_t tick = HAL_GetTick();
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET); // enable
+  penup();
+  HAL_Delay(1000);
+  pendown();
+  HAL_Delay(1000);
+  move(0, 1000);
+  HAL_Delay(1000);
+  move(6, 1000);
+  HAL_Delay(1000);
+  move(4, 1000);
+  HAL_Delay(1000);
+  move(2, 1000);
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET); // disable
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -101,14 +109,7 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_11, GPIO_PIN_SET);
-    HAL_Delay(1);
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_11, GPIO_PIN_RESET);
-    HAL_Delay(1);
-    if (HAL_GetTick() - tick >= 75)
-    {
-      break;
-    }
+
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
@@ -172,6 +173,9 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10 | GPIO_PIN_11 | GPIO_PIN_12 | GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15, GPIO_PIN_RESET);
 
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET);
+
   /*Configure GPIO pins : PB10 PB11 PB12 PB13
                            PB14 PB15 */
   GPIO_InitStruct.Pin = GPIO_PIN_10 | GPIO_PIN_11 | GPIO_PIN_12 | GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15;
@@ -180,13 +184,135 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : PC7 */
+  GPIO_InitStruct.Pin = GPIO_PIN_7;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
   /* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
+void penup()
+{
+  uint32_t tick = HAL_GetTick();
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);
+  while (HAL_GetTick() - tick < 50)
+  {
+    HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_11);
+    HAL_Delay(1);
+  }
+}
 
+void pendown()
+{
+  uint32_t tick = HAL_GetTick();
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
+  while (HAL_GetTick() - tick < 500)
+  {
+    HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_11);
+    HAL_Delay(1);
+  }
+}
+
+void move(uint8_t direction, uint32_t time)
+{
+  uint32_t tick = HAL_GetTick();
+  switch (direction)
+  {
+  // 上
+  case 0:
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
+    while (HAL_GetTick() - tick < time)
+    {
+      HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_15);
+      HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_13);
+      HAL_Delay(1);
+    }
+    break;
+
+  // 右上
+  case 1:
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
+    while (HAL_GetTick() - tick < time)
+    {
+      HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_13);
+      HAL_Delay(1);
+    }
+    break;
+
+  // 右
+  case 2:
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
+    while (HAL_GetTick() - tick < time)
+    {
+      HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_15);
+      HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_13);
+      HAL_Delay(1);
+    }
+    break;
+
+  // 右下
+  case 3:
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
+    while (HAL_GetTick() - tick < time)
+    {
+      HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_15);
+      HAL_Delay(1);
+    }
+    break;
+
+  // 下
+  case 4:
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
+    while (HAL_GetTick() - tick < time)
+    {
+      HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_15);
+      HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_13);
+      HAL_Delay(1);
+    }
+    break;
+
+  // 左下
+  case 5:
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
+    while (HAL_GetTick() - tick < time)
+    {
+      HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_13);
+      HAL_Delay(1);
+    }
+    break;
+
+  // 左
+  case 6:
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_RESET);
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
+    while (HAL_GetTick() - tick < time)
+    {
+      HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_15);
+      HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_13);
+      HAL_Delay(1);
+    }
+    break;
+
+  // 左上
+  case 7:
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_RESET);
+    while (HAL_GetTick() - tick < time)
+    {
+      HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_15);
+      HAL_Delay(1);
+    }
+    break;
+  }
+}
 /* USER CODE END 4 */
 
 /**
