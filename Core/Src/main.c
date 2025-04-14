@@ -90,18 +90,54 @@ int main(void)
   MX_GPIO_Init();
   /* USER CODE BEGIN 2 */
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET); // enable
-  // penup();
-  // HAL_Delay(1000);
+
+  move(3, 3000, 1);
+  HAL_Delay(1000);
+  move(5, 3000, 1);
+  HAL_Delay(1000);
+  move(7, 3000, 1);
+  HAL_Delay(1000);
+  move(1, 3000, 1);
+  HAL_Delay(1000);
+
+  penup();
+  HAL_Delay(1000);
+  move(4, 1121, 0);
+  HAL_Delay(1000);
+  move(6, 900, 0);
+  HAL_Delay(1000);
+
   pendown();
-  // HAL_Delay(1000);
-  // move(0, 1000, 1);
-  // HAL_Delay(1000);
-  // move(6, 1000, 1);
-  // HAL_Delay(1000);
-  // move(4, 1000, 1);
-  // HAL_Delay(1000);
-  // move(2, 1000, 1);
-  
+  HAL_Delay(1000);
+  move(2, 600, 1);
+  HAL_Delay(1000);
+
+  penup();
+  HAL_Delay(1000);
+  move(4, 400, 0);
+  HAL_Delay(1000);
+  move(6, 700, 0);
+  HAL_Delay(1000);
+
+  pendown();
+  HAL_Delay(1000);
+  move(2, 800, 1);
+  HAL_Delay(1000);
+
+  penup();
+  HAL_Delay(1000);
+  move(6, 400, 0);
+  HAL_Delay(1000);
+
+  pendown();
+  HAL_Delay(1000);
+  move(4, 1600, 1);
+  HAL_Delay(1000);
+
+  penup();
+  HAL_Delay(1000);
+  move(0, )
+
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET); // disable
   /* USER CODE END 2 */
 
@@ -213,7 +249,7 @@ void pendown()
 {
   uint32_t tick = HAL_GetTick();
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
-  while (HAL_GetTick() - tick < 100)
+  while (HAL_GetTick() - tick < 50)
   {
     HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_11);
     HAL_Delay(1);
@@ -226,7 +262,7 @@ void move(uint8_t direction, uint32_t time, uint8_t draw)
   if (draw)
   {
     HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
-    while (HAL_GetTick() - tick < 50)
+    while (HAL_GetTick() - tick < 5)
     {
       HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_11);
       HAL_Delay(1);
@@ -246,7 +282,7 @@ void move(uint8_t direction, uint32_t time, uint8_t draw)
     }
     break;
 
-  // 右上
+  // 右上 1
   case 1:
     HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
     while (HAL_GetTick() - tick < time + 50)
@@ -268,7 +304,7 @@ void move(uint8_t direction, uint32_t time, uint8_t draw)
     }
     break;
 
-  // 右下
+  // 右下 1
   case 3:
     HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_SET);
     while (HAL_GetTick() - tick < time + 50)
