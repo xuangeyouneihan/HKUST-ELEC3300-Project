@@ -32,6 +32,16 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
+//Motor directions
+#define motorL_dir    GPIO_PIN_14
+#define motorL_step   GPIO_PIN_15
+#define motorR_dir    GPIO_PIN_12
+#define motorR_step   GPIO_PIN_13
+
+#define dir_CW    GPIO_PIN_SET
+#define dir_CCW   GPIO_PIN_RESET
+#define dir_STOP  PLACEHOLD
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -198,6 +208,9 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+// Discrete stepper motor control
+
 void penup()
 {
   uint32_t tick = HAL_GetTick();
@@ -323,6 +336,42 @@ void move(uint8_t direction, uint32_t time, uint8_t draw)
     break;
   }
 }
+
+
+// TODO: Continuous (stepping) motor control
+
+void moveToXY(float delta_X, float delta_Y) 
+{
+  // quantize to steps
+  int32_t delta_MotorL = (int32_t)(delta_X - delta_Y);
+  int32_t delta_MotorR = (int32_t)(delta_X + delta_Y);
+
+  motorControl(delta_MotorL, delta_MotorR);
+}
+
+
+void motorControl(int32_t delta_MotorL, int32_t delta_MotorR) 
+{
+  // motor directions
+  uint8_t dirL = (delta_MotorL > 0) ? dir_CW : dir_CCW;
+  uint8_t dirR = (delta_MotorR > 0) ? dir_CW : dir_CCW;
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, dirL);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, dirR);
+
+  // absolute steps count
+  uint32_t stepsL = (delta_MotorL > 0) ? delta_MotorL : -delta_MotorL;
+  uint32_t stepsR = (delta_MotorR > 0) ? delta_MotorR : -delta_MotorR;
+  //
+  uint32_t maxSteps = (stepsL > stepsR) ? stepsL : stepsR;
+
+  // Bresenham's line algorithm
+
+}
+
+// END OF TODO
+
+
+
 /* USER CODE END 4 */
 
 /**
