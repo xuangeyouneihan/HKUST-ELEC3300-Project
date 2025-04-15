@@ -35,16 +35,18 @@
 /* USER CODE BEGIN PD */
 
 //Motor directions
-#define motorL_dir    GPIO_PIN_14
-#define motorL_step   GPIO_PIN_15
-#define motorR_dir    GPIO_PIN_12
-#define motorR_step   GPIO_PIN_13
+#define MOTOR_L_DIR    GPIO_PIN_14
+#define MOTOR_L_STEP   GPIO_PIN_15
+#define MOTOR_R_DIR    GPIO_PIN_12
+#define MOTOR_R_STEP   GPIO_PIN_13
 
-#define dir_CW    GPIO_PIN_SET
-#define dir_CCW   GPIO_PIN_RESET
-#define dir_STOP  PLACEHOLD
+#define DIR_CW    GPIO_PIN_SET
+#define DIR_CCW   GPIO_PIN_RESET
+// #define DIR_STOP  PLACEHOLD
 
-#define dflt_step_t 1
+#define DFLT_STEP_T     1 
+#define DFLT_STEP_FREQ  1000
+#define DFLT_STEP_CYCLE 50
 
 /* USER CODE END PD */
 
@@ -387,7 +389,7 @@ void move(uint8_t direction, uint32_t time, uint8_t draw)
 //
 
 //WARNING:
-// float are supported, but steps and positions are int32_t, relative error will accumulate
+// float are supported, but steps and Global Pos are int32_t, relative error will accumulate
 void moveToXY(float delta_X, float delta_Y) 
 {
   // quantize to steps (default scenrio: L = CCW, R = STOP)
@@ -422,15 +424,15 @@ void moveToAbsoluteXY(int32_t target_X, int32_t target_Y)
 void motorControl(int32_t delta_MotorL, int32_t delta_MotorR) 
 {
   // motor directions
-  uint8_t dirL = (delta_MotorL > 0) ? dir_CW : dir_CCW;
-  uint8_t dirR = (delta_MotorR > 0) ? dir_CW : dir_CCW;
+  int8_t dirL = (delta_MotorL > 0) ? DIR_CW : DIR_CCW;
+  int8_t dirR = (delta_MotorR > 0) ? DIR_CW : DIR_CCW;
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, dirL);
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, dirR);
 
   // absolute steps count // to determine which axis for base step
-  uint32_t stepsL = (delta_MotorL > 0) ? delta_MotorL : -delta_MotorL;
-  uint32_t stepsR = (delta_MotorR > 0) ? delta_MotorR : -delta_MotorR;
-  uint32_t maxSteps = (stepsL > stepsR) ? stepsL : stepsR;
+  int32_t stepsL = (delta_MotorL > 0) ? delta_MotorL : -delta_MotorL;
+  int32_t stepsR = (delta_MotorR > 0) ? delta_MotorR : -delta_MotorR;
+  int32_t maxSteps = (stepsL > stepsR) ? stepsL : stepsR;
 
   // Bresenham's line algorithm
   // Basic:
@@ -449,9 +451,9 @@ void motorControl(int32_t delta_MotorL, int32_t delta_MotorR)
     if (error_L >= stepsL) 
     {
       if (stepsL > 0) {
-        HAL_GPIO_WritePin(GPIOB, motorL_step, GPIO_PIN_SET);
+        HAL_GPIO_WritePin(GPIOB, MOTOR_L_STEP, GPIO_PIN_SET);
         HAL_Delay(dflt_step_t);
-        HAL_GPIO_WritePin(GPIOB, motorL_step, GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(GPIOB, MOTOR_L_STEP, GPIO_PIN_RESET);
       }
       error_L -= maxSteps;
     }
@@ -459,9 +461,9 @@ void motorControl(int32_t delta_MotorL, int32_t delta_MotorR)
     if (error_R >= stepsR) 
     {
       if (stepsR > 0) {
-        HAL_GPIO_WritePin(GPIOB, motorR_step, GPIO_PIN_SET);
+        HAL_GPIO_WritePin(GPIOB, MOTOR_R_STEP, GPIO_PIN_SET);
         HAL_Delay(dflt_step_t);
-        HAL_GPIO_WritePin(GPIOB, motorR_step, GPIO_PIN_RESET);
+        HAL_GPIO_WritePin(GPIOB, MOTOR_R_STEP, GPIO_PIN_RESET);
       }
       error_R -= maxSteps;
     }
