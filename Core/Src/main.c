@@ -22,6 +22,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
+#include <math.h>
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -54,6 +56,9 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+
+int32_t Global_X = 0;
+int32_t Global_Y = 0;
 
 /* USER CODE END PV */
 
@@ -381,6 +386,8 @@ void move(uint8_t direction, uint32_t time, uint8_t draw)
 // Continuous (stepping) motor controls
 //
 
+//WARNING:
+// float are supported, but steps and positions are int32_t, relative error will accumulate
 void moveToXY(float delta_X, float delta_Y) 
 {
   // quantize to steps (default scenrio: L = CCW, R = STOP)
@@ -388,11 +395,27 @@ void moveToXY(float delta_X, float delta_Y)
   int32_t delta_MotorR = (int32_t)(delta_X - delta_Y);
 
   motorControl(delta_MotorL, delta_MotorR);
+
+  updateGlobalXY(delta_X, delta_Y);
 }
+
 
 void moveAngle(float distance, float angle) 
 {
+  float delta_X = distance * cos(angle * M_PI / 180.0f);
+  float delta_Y = distance * sin(angle * M_PI / 180.0f);
 
+  moveToXY(delta_X, delta_Y);
+}
+
+
+void moveToAbsoluteXY(int32_t target_X, int32_t target_Y) 
+{
+  // calculate deltas
+  float delta_X = target_X - Global_X;
+  float delta_Y = target_Y - Global_Y;
+
+  moveToXY(delta_X, delta_Y);
 }
 
 
@@ -451,6 +474,15 @@ void motorControl(int32_t delta_MotorL, int32_t delta_MotorR)
   }
 }
 
+
+// WARNING: 
+// deltas can be floats, steps and Global positions are int32_t
+// steps are time dependent, overtime relative error will accumulate
+void updateGlobalXY(float delta_X, float delta_Y) 
+{
+  Global_X += (int32_t)delta_X;
+  Global_Y += (int32_t)delta_Y;
+}
 
 
 
