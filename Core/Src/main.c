@@ -163,7 +163,7 @@ int main(void)
 
   penup();
   HAL_Delay(1000);
-  move(0, )
+  // move(0, )
 
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET); // disable
   /* USER CODE END 2 */
@@ -453,7 +453,7 @@ void motorControl(int32_t delta_MotorL, int32_t delta_MotorR)
   int32_t error_L = maxSteps / 2;
   int32_t error_R = maxSteps / 2;
 
-  for (int i; i < maxSteps; i++) 
+  for (int i = 0; i < maxSteps; i++) 
   {
     // check motorL error
     if (error_L >= stepsL) 
@@ -480,7 +480,7 @@ void motorControl(int32_t delta_MotorL, int32_t delta_MotorR)
     error_L += stepsL;
     error_R += stepsR;
 
-    HAL_delay(1);
+    HAL_Delay(1);
   }
 }
 
