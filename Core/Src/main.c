@@ -34,18 +34,18 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
-//Motor directions
-#define MOTOR_L_DIR    GPIO_PIN_12
-#define MOTOR_L_STEP   GPIO_PIN_13
-#define MOTOR_R_DIR    GPIO_PIN_14
-#define MOTOR_R_STEP   GPIO_PIN_15
+// Motor directions
+#define MOTOR_L_DIR GPIO_PIN_12
+#define MOTOR_L_STEP GPIO_PIN_13
+#define MOTOR_R_DIR GPIO_PIN_14
+#define MOTOR_R_STEP GPIO_PIN_15
 
-#define DIR_CW    GPIO_PIN_SET
-#define DIR_CCW   GPIO_PIN_RESET
+#define DIR_CW GPIO_PIN_SET
+#define DIR_CCW GPIO_PIN_RESET
 // #define DIR_STOP  PLACEHOLD
 
-#define DFLT_STEP_T     1 
-#define DFLT_STEP_FREQ  1000
+#define DFLT_STEP_T 1
+#define DFLT_STEP_FREQ 1000
 #define DFLT_STEP_CYCLE 50
 
 /* USER CODE END PD */
@@ -67,9 +67,7 @@ int32_t Global_Y = 0;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-
 /* USER CODE BEGIN PFP */
-
 void penup();
 void pendown();
 void move(uint8_t direction, uint32_t time, uint8_t draw);
@@ -78,7 +76,6 @@ void moveAngle(float distance, float angle);
 void moveToAbsoluteXY(int32_t target_X, int32_t target_Y);
 void motorControl(int32_t delta_MotorL, int32_t delta_MotorR);
 void updateGlobalXY(float delta_X, float delta_Y);
-
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -240,14 +237,21 @@ static void MX_GPIO_Init(void)
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOC_CLK_ENABLE();
-  __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
+  __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10 | GPIO_PIN_11 | GPIO_PIN_12 | GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin : PA0 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PB10 PB11 PB12 PB13
                            PB14 PB15 */
@@ -256,6 +260,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PD13 */
+  GPIO_InitStruct.Pin = GPIO_PIN_13;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
   /*Configure GPIO pin : PC7 */
   GPIO_InitStruct.Pin = GPIO_PIN_7;
@@ -405,9 +415,9 @@ void move(uint8_t direction, uint32_t time, uint8_t draw)
 // Continuous (stepping) motor controls
 //
 
-//WARNING:
-// float are supported, but steps and Global Pos are int32_t, relative error will accumulate
-void moveToXY(float delta_X, float delta_Y) 
+// WARNING:
+//  float are supported, but steps and Global Pos are int32_t, relative error will accumulate
+void moveToXY(float delta_X, float delta_Y)
 {
   // quantize to steps (default scenrio: L = CCW, R = STOP)
   int32_t delta_MotorL = (int32_t)(delta_X + delta_Y);
@@ -418,8 +428,7 @@ void moveToXY(float delta_X, float delta_Y)
   updateGlobalXY(delta_X, delta_Y);
 }
 
-
-void moveAngle(float distance, float angle) 
+void moveAngle(float distance, float angle)
 {
   float delta_X = distance * cos(angle * M_PI / 180.0f);
   float delta_Y = distance * sin(angle * M_PI / 180.0f);
@@ -427,8 +436,7 @@ void moveAngle(float distance, float angle)
   moveToXY(delta_X, delta_Y);
 }
 
-
-void moveToAbsoluteXY(int32_t target_X, int32_t target_Y) 
+void moveToAbsoluteXY(int32_t target_X, int32_t target_Y)
 {
   // calculate deltas
   float delta_X = target_X - Global_X;
@@ -437,8 +445,7 @@ void moveToAbsoluteXY(int32_t target_X, int32_t target_Y)
   moveToXY(delta_X, delta_Y);
 }
 
-
-void motorControl(int32_t delta_MotorL, int32_t delta_MotorR) 
+void motorControl(int32_t delta_MotorL, int32_t delta_MotorR)
 {
   // motor directions
   int8_t dirL = (delta_MotorL > 0) ? DIR_CW : DIR_CCW;
@@ -462,12 +469,13 @@ void motorControl(int32_t delta_MotorL, int32_t delta_MotorR)
   int32_t error_L = maxSteps / 2;
   int32_t error_R = maxSteps / 2;
 
-  for (int i = 0; i < maxSteps; i++) 
+  for (int i = 0; i < maxSteps; i++)
   {
     // check motorL error
-    if (error_L >= stepsL) 
+    if (error_L >= stepsL)
     {
-      if (stepsL > 0) {
+      if (stepsL > 0)
+      {
         HAL_GPIO_WritePin(GPIOB, MOTOR_L_STEP, GPIO_PIN_SET);
         HAL_Delay(DFLT_STEP_T);
         HAL_GPIO_WritePin(GPIOB, MOTOR_L_STEP, GPIO_PIN_RESET);
@@ -475,9 +483,10 @@ void motorControl(int32_t delta_MotorL, int32_t delta_MotorR)
       error_L -= maxSteps;
     }
     // step motorR
-    if (error_R >= stepsR) 
+    if (error_R >= stepsR)
     {
-      if (stepsR > 0) {
+      if (stepsR > 0)
+      {
         HAL_GPIO_WritePin(GPIOB, MOTOR_R_STEP, GPIO_PIN_SET);
         HAL_Delay(DFLT_STEP_T);
         HAL_GPIO_WritePin(GPIOB, MOTOR_R_STEP, GPIO_PIN_RESET);
@@ -493,17 +502,14 @@ void motorControl(int32_t delta_MotorL, int32_t delta_MotorR)
   }
 }
 
-
-// WARNING: 
+// WARNING:
 // deltas can be floats, steps and Global positions are int32_t
 // steps are time dependent, overtime relative error will accumulate
-void updateGlobalXY(float delta_X, float delta_Y) 
+void updateGlobalXY(float delta_X, float delta_Y)
 {
   Global_X += (int32_t)delta_X;
   Global_Y += (int32_t)delta_Y;
 }
-
-
 
 /* USER CODE END 4 */
 
