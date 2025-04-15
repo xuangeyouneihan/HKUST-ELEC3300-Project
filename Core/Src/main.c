@@ -70,12 +70,13 @@ static void MX_GPIO_Init(void);
 /* USER CODE BEGIN PFP */
 void penup();
 void pendown();
-void move(uint8_t direction, uint32_t time, uint8_t draw);
+void legacyMove(uint8_t direction, uint32_t time, uint8_t draw);
 void moveToXY(float delta_X, float delta_Y);
 void moveAngle(float distance, float angle);
 void moveToAbsoluteXY(int32_t target_X, int32_t target_Y);
 void motorControl(int32_t delta_MotorL, int32_t delta_MotorR);
 void updateGlobalXY(float delta_X, float delta_Y);
+void drawFu();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -100,7 +101,7 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET); // disable
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -113,71 +114,17 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   /* USER CODE BEGIN 2 */
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET); // enable
 
-  // move(3, 3000, 1);
-  // HAL_Delay(1000);
-  // move(5, 3000, 1);
-  // HAL_Delay(1000);
-  // move(7, 3000, 1);
-  // HAL_Delay(1000);
-  // move(1, 3000, 1);
-  // HAL_Delay(1000);
-
-  // penup();
-  // HAL_Delay(1000);
-  // move(4, 1121, 0);
-  // HAL_Delay(1000);
-  // move(6, 900, 0);
-  // HAL_Delay(1000);
-
-  // pendown();
-  // HAL_Delay(1000);
-  // move(2, 600, 1);
-  // HAL_Delay(1000);
-
-  // penup();
-  // HAL_Delay(1000);
-  // move(4, 400, 0);
-  // HAL_Delay(1000);
-  // move(6, 700, 0);
-  // HAL_Delay(1000);
-
-  // pendown();
-  // HAL_Delay(1000);
-  // move(2, 800, 1);
-  // HAL_Delay(1000);
-
-  // penup();
-  // HAL_Delay(1000);
-  // move(6, 400, 0);
-  // HAL_Delay(1000);
-
-  // pendown();
-  // HAL_Delay(1000);
-  // move(4, 1600, 1);
-  // HAL_Delay(1000);
-
-  // penup();
-  // HAL_Delay(1000);
-
-  // move(1, 500, 0);
-  // move(0, 500, 0);
-  // moveToXY(100, 0);
-  // moveToXY(-100, 0);
-  // moveToXY(0, 100);
-  // moveToXY(0, -100);
-  moveToXY(100, 200);
-  moveToXY(-100, -200);
-  // motorControl(100, 0);
-
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET); // disable
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+    if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0))
+    {
+      drawFu();
+    }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -285,6 +232,56 @@ static void MX_GPIO_Init(void)
 // Discrete stepper motor control
 //
 
+void drawFu()
+{
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET); // enable
+
+  legacyMove(3, 3000, 1);
+  HAL_Delay(1000);
+  legacyMove(5, 3000, 1);
+  HAL_Delay(1000);
+  legacyMove(7, 3000, 1);
+  HAL_Delay(1000);
+  legacyMove(1, 3000, 1);
+  HAL_Delay(1000);
+
+  penup();
+  HAL_Delay(1000);
+  legacyMove(4, 1121, 0);
+  HAL_Delay(1000);
+  legacyMove(6, 900, 0);
+  HAL_Delay(1000);
+
+  pendown();
+  HAL_Delay(1000);
+  legacyMove(2, 600, 1);
+  HAL_Delay(1000);
+
+  penup();
+  HAL_Delay(1000);
+  legacyMove(4, 400, 0);
+  HAL_Delay(1000);
+  legacyMove(6, 700, 0);
+  HAL_Delay(1000);
+
+  pendown();
+  HAL_Delay(1000);
+  legacyMove(2, 800, 1);
+  HAL_Delay(1000);
+
+  penup();
+  HAL_Delay(1000);
+  legacyMove(6, 400, 0);
+  HAL_Delay(1000);
+
+  pendown();
+  HAL_Delay(1000);
+  legacyMove(4, 1600, 1);
+  HAL_Delay(1000);
+
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET); // disable
+}
+
 void penup()
 {
   uint32_t tick = HAL_GetTick();
@@ -307,7 +304,7 @@ void pendown()
   }
 }
 
-void move(uint8_t direction, uint32_t time, uint8_t draw)
+void legacyMove(uint8_t direction, uint32_t time, uint8_t draw)
 {
   uint32_t tick = HAL_GetTick();
   if (draw)
