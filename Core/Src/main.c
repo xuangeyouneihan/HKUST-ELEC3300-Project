@@ -78,6 +78,7 @@ void motorControl(int32_t delta_MotorL, int32_t delta_MotorR);
 void updateGlobalXY(float delta_X, float delta_Y);
 void drawFu();
 void drawCircle();
+void drawRegularPentagon();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -86,9 +87,9 @@ void drawCircle();
 /* USER CODE END 0 */
 
 /**
-  * @brief  The application entry point.
-  * @retval int
-  */
+ * @brief  The application entry point.
+ * @retval int
+ */
 int main(void)
 {
 
@@ -129,6 +130,7 @@ int main(void)
     if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13))
     {
       drawCircle();
+      drawRegularPentagon();
     }
     /* USER CODE END WHILE */
 
@@ -138,17 +140,17 @@ int main(void)
 }
 
 /**
-  * @brief System Clock Configuration
-  * @retval None
-  */
+ * @brief System Clock Configuration
+ * @retval None
+ */
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
   /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
+   * in the RCC_OscInitTypeDef structure.
+   */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
@@ -162,9 +164,8 @@ void SystemClock_Config(void)
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+   */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
@@ -177,10 +178,10 @@ void SystemClock_Config(void)
 }
 
 /**
-  * @brief GPIO Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief GPIO Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -194,8 +195,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10|GPIO_PIN_11|GPIO_PIN_12|GPIO_PIN_13
-                          |GPIO_PIN_14|GPIO_PIN_15, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10 | GPIO_PIN_11 | GPIO_PIN_12 | GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET);
@@ -214,8 +214,7 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pins : PB10 PB11 PB12 PB13
                            PB14 PB15 */
-  GPIO_InitStruct.Pin = GPIO_PIN_10|GPIO_PIN_11|GPIO_PIN_12|GPIO_PIN_13
-                          |GPIO_PIN_14|GPIO_PIN_15;
+  GPIO_InitStruct.Pin = GPIO_PIN_10 | GPIO_PIN_11 | GPIO_PIN_12 | GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_OD;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -254,37 +253,132 @@ void drawFu()
 
   penup();
   HAL_Delay(1000);
-  legacyMove(4, 1121, 0);
-  HAL_Delay(1000);
-  legacyMove(6, 900, 0);
-  HAL_Delay(1000);
-
-  pendown();
-  HAL_Delay(1000);
-  legacyMove(2, 600, 1);
-  HAL_Delay(1000);
-
-  penup();
-  HAL_Delay(1000);
-  legacyMove(4, 400, 0);
-  HAL_Delay(1000);
-  legacyMove(6, 700, 0);
-  HAL_Delay(1000);
-
-  pendown();
-  HAL_Delay(1000);
-  legacyMove(2, 800, 1);
-  HAL_Delay(1000);
-
-  penup();
+  legacyMove(4, 871, 0);
   HAL_Delay(1000);
   legacyMove(6, 400, 0);
   HAL_Delay(1000);
 
   pendown();
   HAL_Delay(1000);
-  legacyMove(4, 1600, 1);
+  legacyMove(2, 300, 1);
   HAL_Delay(1000);
+
+  penup();
+  HAL_Delay(1000);
+  legacyMove(4, 200, 0);
+  HAL_Delay(1000);
+  legacyMove(6, 450, 0);
+  HAL_Delay(1000);
+
+  pendown();
+  HAL_Delay(1000);
+  legacyMove(2, 500, 1);
+  HAL_Delay(1000);
+
+  penup();
+  HAL_Delay(1000);
+  legacyMove(6, 200, 0);
+  HAL_Delay(1000);
+
+  pendown();
+  HAL_Delay(1000);
+  legacyMove(4, 900, 1);
+  HAL_Delay(1000);
+
+  penup();
+  HAL_Delay(1000);
+  legacyMove(0, 650, 0);
+  HAL_Delay(1000);
+  legacyMove(6, 150, 0);
+  HAL_Delay(1000);
+
+  pendown();
+  HAL_Delay(1000);
+  legacyMove(4, 350, 1);
+  HAL_Delay(1000);
+
+  penup();
+  HAL_Delay(1000);
+  legacyMove(0, 350, 0);
+  HAL_Delay(1000);
+  legacyMove(2, 300, 0);
+  HAL_Delay(1000);
+
+  pendown();
+  HAL_Delay(1000);
+  legacyMove(4, 350, 1);
+  HAL_Delay(1000);
+
+  penup();
+  HAL_Delay(1000);
+  legacyMove(2, 200, 0);
+  HAL_Delay(1000);
+  legacyMove(0, 825, 0);
+  HAL_Delay(1000);
+
+  pendown();
+  HAL_Delay(1000);
+  legacyMove(2, 400, 1);
+  HAL_Delay(1000);
+
+  penup();
+  HAL_Delay(1000);
+  legacyMove(6, 50, 0);
+  HAL_Delay(1000);
+  legacyMove(4, 150, 0);
+  HAL_Delay(1000);
+
+  pendown();
+  HAL_Delay(1000);
+  legacyMove(4, 200, 1);
+  HAL_Delay(1000);
+  legacyMove(6, 300, 1);
+  HAL_Delay(1000);
+  legacyMove(0, 200, 1);
+  HAL_Delay(1000);
+  legacyMove(2, 300, 1);
+  HAL_Delay(1000);
+
+  penup();
+  HAL_Delay(1000);
+  legacyMove(4, 350, 0);
+  HAL_Delay(1000);
+  legacyMove(2, 100, 0);
+  HAL_Delay(1000);
+
+  pendown();
+  HAL_Delay(1000);
+  legacyMove(4, 500, 1);
+  HAL_Delay(1000);
+  legacyMove(6, 500, 1);
+  HAL_Delay(1000);
+  legacyMove(0, 500, 1);
+  HAL_Delay(1000);
+  legacyMove(2, 500, 1);
+  HAL_Delay(1000);
+
+  penup();
+  HAL_Delay(1000);
+  legacyMove(6, 500, 0);
+  HAL_Delay(1000);
+  legacyMove(4, 225, 0);
+  HAL_Delay(1000);
+
+  pendown();
+  HAL_Delay(1000);
+  legacyMove(2, 500, 1);
+  HAL_Delay(1000);
+
+  penup();
+  HAL_Delay(1000);
+  legacyMove(0, 225, 0);
+  HAL_Delay(1000);
+  legacyMove(6, 225, 0);
+  HAL_Delay(1000);
+
+  pendown();
+  HAL_Delay(1000);
+  legacyMove(4, 500, 1);
 
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET); // disable
 }
@@ -295,7 +389,36 @@ void drawCircle()
 
   for (int i = 0; i < 72; i++)
   {
+    if (!(i % 12))
+    {
+      uint32_t tick = HAL_GetTick();
+      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
+      while (HAL_GetTick() - tick < 5)
+      {
+        HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_11);
+        HAL_Delay(1);
+      }
+    }
     moveAngle(25, i * 5);
+  }
+
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET); // disable
+}
+
+void drawRegularPentagon()
+{
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET); // enable
+
+  uint32_t tick = HAL_GetTick();
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
+  while (HAL_GetTick() - tick < 5)
+  {
+    HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_11);
+    HAL_Delay(1);
+  }
+  for (int i = 0; i < 5; i++)
+  {
+    moveAngle(200, (float)i * 360 / 5);
   }
 
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET); // disable
@@ -305,7 +428,7 @@ void penup()
 {
   uint32_t tick = HAL_GetTick();
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);
-  while (HAL_GetTick() - tick < 50)
+  while (HAL_GetTick() - tick < 100)
   {
     HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_11);
     HAL_Delay(1);
@@ -316,7 +439,7 @@ void pendown()
 {
   uint32_t tick = HAL_GetTick();
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
-  while (HAL_GetTick() - tick < 50)
+  while (HAL_GetTick() - tick < 100)
   {
     HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_11);
     HAL_Delay(1);
@@ -530,9 +653,9 @@ void updateGlobalXY(float delta_X, float delta_Y)
 /* USER CODE END 4 */
 
 /**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
+ * @brief  This function is executed in case of error occurrence.
+ * @retval None
+ */
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
@@ -544,14 +667,14 @@ void Error_Handler(void)
   /* USER CODE END Error_Handler_Debug */
 }
 
-#ifdef  USE_FULL_ASSERT
+#ifdef USE_FULL_ASSERT
 /**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
+ * @brief  Reports the name of the source file and the source line number
+ *         where the assert_param error has occurred.
+ * @param  file: pointer to the source file name
+ * @param  line: assert_param error line source number
+ * @retval None
+ */
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
