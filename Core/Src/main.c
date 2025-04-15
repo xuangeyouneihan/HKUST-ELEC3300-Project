@@ -35,10 +35,10 @@
 /* USER CODE BEGIN PD */
 
 //Motor directions
-#define MOTOR_L_DIR    GPIO_PIN_14
-#define MOTOR_L_STEP   GPIO_PIN_15
-#define MOTOR_R_DIR    GPIO_PIN_12
-#define MOTOR_R_STEP   GPIO_PIN_13
+#define MOTOR_L_DIR    GPIO_PIN_12
+#define MOTOR_L_STEP   GPIO_PIN_13
+#define MOTOR_R_DIR    GPIO_PIN_14
+#define MOTOR_R_STEP   GPIO_PIN_15
 
 #define DIR_CW    GPIO_PIN_SET
 #define DIR_CCW   GPIO_PIN_RESET
@@ -118,52 +118,61 @@ int main(void)
   /* USER CODE BEGIN 2 */
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET); // enable
 
-  move(3, 3000, 1);
-  HAL_Delay(1000);
-  move(5, 3000, 1);
-  HAL_Delay(1000);
-  move(7, 3000, 1);
-  HAL_Delay(1000);
-  move(1, 3000, 1);
-  HAL_Delay(1000);
+  // move(3, 3000, 1);
+  // HAL_Delay(1000);
+  // move(5, 3000, 1);
+  // HAL_Delay(1000);
+  // move(7, 3000, 1);
+  // HAL_Delay(1000);
+  // move(1, 3000, 1);
+  // HAL_Delay(1000);
 
-  penup();
-  HAL_Delay(1000);
-  move(4, 1121, 0);
-  HAL_Delay(1000);
-  move(6, 900, 0);
-  HAL_Delay(1000);
+  // penup();
+  // HAL_Delay(1000);
+  // move(4, 1121, 0);
+  // HAL_Delay(1000);
+  // move(6, 900, 0);
+  // HAL_Delay(1000);
 
-  pendown();
-  HAL_Delay(1000);
-  move(2, 600, 1);
-  HAL_Delay(1000);
+  // pendown();
+  // HAL_Delay(1000);
+  // move(2, 600, 1);
+  // HAL_Delay(1000);
 
-  penup();
-  HAL_Delay(1000);
-  move(4, 400, 0);
-  HAL_Delay(1000);
-  move(6, 700, 0);
-  HAL_Delay(1000);
+  // penup();
+  // HAL_Delay(1000);
+  // move(4, 400, 0);
+  // HAL_Delay(1000);
+  // move(6, 700, 0);
+  // HAL_Delay(1000);
 
-  pendown();
-  HAL_Delay(1000);
-  move(2, 800, 1);
-  HAL_Delay(1000);
+  // pendown();
+  // HAL_Delay(1000);
+  // move(2, 800, 1);
+  // HAL_Delay(1000);
 
-  penup();
-  HAL_Delay(1000);
-  move(6, 400, 0);
-  HAL_Delay(1000);
+  // penup();
+  // HAL_Delay(1000);
+  // move(6, 400, 0);
+  // HAL_Delay(1000);
 
-  pendown();
-  HAL_Delay(1000);
-  move(4, 1600, 1);
-  HAL_Delay(1000);
+  // pendown();
+  // HAL_Delay(1000);
+  // move(4, 1600, 1);
+  // HAL_Delay(1000);
 
-  penup();
-  HAL_Delay(1000);
-  // move(0, )
+  // penup();
+  // HAL_Delay(1000);
+
+  // move(1, 500, 0);
+  // move(0, 500, 0);
+  // moveToXY(100, 0);
+  // moveToXY(-100, 0);
+  // moveToXY(0, 100);
+  // moveToXY(0, -100);
+  moveToXY(100, 200);
+  moveToXY(-100, -200);
+  // motorControl(100, 0);
 
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET); // disable
   /* USER CODE END 2 */
@@ -401,7 +410,7 @@ void move(uint8_t direction, uint32_t time, uint8_t draw)
 void moveToXY(float delta_X, float delta_Y) 
 {
   // quantize to steps (default scenrio: L = CCW, R = STOP)
-  int32_t delta_MotorL = (int32_t)(delta_X + delta_Y); 
+  int32_t delta_MotorL = (int32_t)(delta_X + delta_Y);
   int32_t delta_MotorR = (int32_t)(delta_X - delta_Y);
 
   motorControl(delta_MotorL, delta_MotorR);
@@ -434,8 +443,8 @@ void motorControl(int32_t delta_MotorL, int32_t delta_MotorR)
   // motor directions
   int8_t dirL = (delta_MotorL > 0) ? DIR_CW : DIR_CCW;
   int8_t dirR = (delta_MotorR > 0) ? DIR_CW : DIR_CCW;
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, dirL);
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, dirR);
+  HAL_GPIO_WritePin(GPIOB, MOTOR_L_DIR, dirL);
+  HAL_GPIO_WritePin(GPIOB, MOTOR_R_DIR, dirR);
 
   // absolute steps count // to determine which axis for base step
   int32_t stepsL = (delta_MotorL > 0) ? delta_MotorL : -delta_MotorL;
