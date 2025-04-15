@@ -42,6 +42,8 @@
 #define dir_CCW   GPIO_PIN_RESET
 #define dir_STOP  PLACEHOLD
 
+#define dflt_step_t 1
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -112,133 +114,41 @@ int main(void)
 
   penup();
   HAL_Delay(1000);
-  move(4, 871, 0);
+  move(4, 1121, 0);
+  HAL_Delay(1000);
+  move(6, 900, 0);
+  HAL_Delay(1000);
+
+  pendown();
+  HAL_Delay(1000);
+  move(2, 600, 1);
+  HAL_Delay(1000);
+
+  penup();
+  HAL_Delay(1000);
+  move(4, 400, 0);
+  HAL_Delay(1000);
+  move(6, 700, 0);
+  HAL_Delay(1000);
+
+  pendown();
+  HAL_Delay(1000);
+  move(2, 800, 1);
+  HAL_Delay(1000);
+
+  penup();
   HAL_Delay(1000);
   move(6, 400, 0);
   HAL_Delay(1000);
 
   pendown();
   HAL_Delay(1000);
-  move(2, 300, 1);
+  move(4, 1600, 1);
   HAL_Delay(1000);
 
   penup();
   HAL_Delay(1000);
-  move(4, 200, 0);
-  HAL_Delay(1000);
-  move(6, 450, 0);
-  HAL_Delay(1000);
-
-  pendown();
-  HAL_Delay(1000);
-  move(2, 500, 1);
-  HAL_Delay(1000);
-
-  penup();
-  HAL_Delay(1000);
-  move(6, 200, 0);
-  HAL_Delay(1000);
-
-  pendown();
-  HAL_Delay(1000);
-  move(4, 900, 1);
-  HAL_Delay(1000);
-
-  penup();
-  HAL_Delay(1000);
-  move(0, 650, 0);
-  HAL_Delay(1000);
-  move(6, 150, 0);
-  HAL_Delay(1000);
-
-  pendown();
-  HAL_Delay(1000);
-  move(4, 350, 1);
-  HAL_Delay(1000);
-
-  penup();
-  HAL_Delay(1000);
-  move(0, 350, 0);
-  HAL_Delay(1000);
-  move(2, 300, 0);
-  HAL_Delay(1000);
-
-  pendown();
-  HAL_Delay(1000);
-  move(4, 350, 1);
-  HAL_Delay(1000);
-
-  penup();
-  HAL_Delay(1000);
-  move(2, 200, 0);
-  HAL_Delay(1000);
-  move(0, 825, 0);
-  HAL_Delay(1000);
-
-  pendown();
-  HAL_Delay(1000);
-  move(2, 400, 1);
-  HAL_Delay(1000);
-
-  penup();
-  HAL_Delay(1000);
-  move(6, 50, 0);
-  HAL_Delay(1000);
-  move(4, 150, 0);
-  HAL_Delay(1000);
-
-  pendown();
-  HAL_Delay(1000);
-  move(4, 200, 1);
-  HAL_Delay(1000);
-  move(6, 300, 1);
-  HAL_Delay(1000);
-  move(0, 200, 1);
-  HAL_Delay(1000);
-  move(2, 300, 1);
-  HAL_Delay(1000);
-
-  penup();
-  HAL_Delay(1000);
-  move(4, 350, 0);
-  HAL_Delay(1000);
-  move(2, 100, 0);
-  HAL_Delay(1000);
-
-  pendown();
-  HAL_Delay(1000);
-  move(4, 500, 1);
-  HAL_Delay(1000);
-  move(6, 500, 1);
-  HAL_Delay(1000);
-  move(0, 500, 1);
-  HAL_Delay(1000);
-  move(2, 500, 1);
-  HAL_Delay(1000);
-
-  penup();
-  HAL_Delay(1000);
-  move(6, 500, 0);
-  HAL_Delay(1000);
-  move(4, 225, 0);
-  HAL_Delay(1000);
-
-  pendown();
-  HAL_Delay(1000);
-  move(2, 500, 1);
-  HAL_Delay(1000);
-
-  penup();
-  HAL_Delay(1000);
-  move(0, 225, 0);
-  HAL_Delay(1000);
-  move(6, 225, 0);
-  HAL_Delay(1000);
-
-  pendown();
-  HAL_Delay(1000);
-  move(4, 500, 1);
-  HAL_Delay(1000);
+  move(0, )
 
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET); // disable
   /* USER CODE END 2 */
@@ -337,13 +247,15 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
+//
 // Discrete stepper motor control
+//
 
 void penup()
 {
   uint32_t tick = HAL_GetTick();
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);
-  while (HAL_GetTick() - tick < 100)
+  while (HAL_GetTick() - tick < 50)
   {
     HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_11);
     HAL_Delay(1);
@@ -354,7 +266,7 @@ void pendown()
 {
   uint32_t tick = HAL_GetTick();
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
-  while (HAL_GetTick() - tick < 100)
+  while (HAL_GetTick() - tick < 50)
   {
     HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_11);
     HAL_Delay(1);
@@ -465,16 +377,22 @@ void move(uint8_t direction, uint32_t time, uint8_t draw)
   }
 }
 
-
-// TODO: Continuous (stepping) motor control
+//
+// Continuous (stepping) motor controls
+//
 
 void moveToXY(float delta_X, float delta_Y) 
 {
-  // quantize to steps
-  int32_t delta_MotorL = (int32_t)(delta_X - delta_Y);
-  int32_t delta_MotorR = (int32_t)(delta_X + delta_Y);
+  // quantize to steps (default scenrio: L = CCW, R = STOP)
+  int32_t delta_MotorL = (int32_t)(delta_X + delta_Y); 
+  int32_t delta_MotorR = (int32_t)(delta_X - delta_Y);
 
   motorControl(delta_MotorL, delta_MotorR);
+}
+
+void moveAngle(float distance, float angle) 
+{
+
 }
 
 
@@ -486,17 +404,53 @@ void motorControl(int32_t delta_MotorL, int32_t delta_MotorR)
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, dirL);
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, dirR);
 
-  // absolute steps count
+  // absolute steps count // to determine which axis for base step
   uint32_t stepsL = (delta_MotorL > 0) ? delta_MotorL : -delta_MotorL;
   uint32_t stepsR = (delta_MotorR > 0) ? delta_MotorR : -delta_MotorR;
-  //
   uint32_t maxSteps = (stepsL > stepsR) ? stepsL : stepsR;
 
   // Bresenham's line algorithm
+  // Basic:
+  // move using unit-length of the longer axis, then apply change of the other axis with error accumulation.
+  // set unit-length of the longer axis to aviod sharp jumps.
+  // Mutation:
+  // half steps for each and have the algo in both motor, error threshold is maxSteps.
+  // check threshold for each, apply change and sutract error if threshold is reached.
+  // increment absolute steps into error each iteration.
+  int32_t error_L = maxSteps / 2;
+  int32_t error_R = maxSteps / 2;
 
+  for (int i; i < maxSteps; i++) 
+  {
+    // check motorL error
+    if (error_L >= stepsL) 
+    {
+      if (stepsL > 0) {
+        HAL_GPIO_WritePin(GPIOB, motorL_step, GPIO_PIN_SET);
+        HAL_Delay(dflt_step_t);
+        HAL_GPIO_WritePin(GPIOB, motorL_step, GPIO_PIN_RESET);
+      }
+      error_L -= maxSteps;
+    }
+    // step motorR
+    if (error_R >= stepsR) 
+    {
+      if (stepsR > 0) {
+        HAL_GPIO_WritePin(GPIOB, motorR_step, GPIO_PIN_SET);
+        HAL_Delay(dflt_step_t);
+        HAL_GPIO_WritePin(GPIOB, motorR_step, GPIO_PIN_RESET);
+      }
+      error_R -= maxSteps;
+    }
+
+    // update error
+    error_L += stepsL;
+    error_R += stepsR;
+
+    HAL_delay(1);
+  }
 }
 
-// END OF TODO
 
 
 
