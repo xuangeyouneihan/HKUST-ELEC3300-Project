@@ -67,10 +67,18 @@ int32_t Global_Y = 0;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+
 /* USER CODE BEGIN PFP */
+
 void penup();
 void pendown();
 void move(uint8_t direction, uint32_t time, uint8_t draw);
+void moveToXY(float delta_X, float delta_Y);
+void moveAngle(float distance, float angle);
+void moveToAbsoluteXY(int32_t target_X, int32_t target_Y);
+void motorControl(int32_t delta_MotorL, int32_t delta_MotorR);
+void updateGlobalXY(float delta_X, float delta_Y);
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -452,7 +460,7 @@ void motorControl(int32_t delta_MotorL, int32_t delta_MotorR)
     {
       if (stepsL > 0) {
         HAL_GPIO_WritePin(GPIOB, MOTOR_L_STEP, GPIO_PIN_SET);
-        HAL_Delay(dflt_step_t);
+        HAL_Delay(DFLT_STEP_T);
         HAL_GPIO_WritePin(GPIOB, MOTOR_L_STEP, GPIO_PIN_RESET);
       }
       error_L -= maxSteps;
@@ -462,7 +470,7 @@ void motorControl(int32_t delta_MotorL, int32_t delta_MotorR)
     {
       if (stepsR > 0) {
         HAL_GPIO_WritePin(GPIOB, MOTOR_R_STEP, GPIO_PIN_SET);
-        HAL_Delay(dflt_step_t);
+        HAL_Delay(DFLT_STEP_T);
         HAL_GPIO_WritePin(GPIOB, MOTOR_R_STEP, GPIO_PIN_RESET);
       }
       error_R -= maxSteps;
