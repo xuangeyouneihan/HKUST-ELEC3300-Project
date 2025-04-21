@@ -36,13 +36,13 @@
 			{
 				"command" : 1,
 				"file" : 1,
-				"line" : 77,
+				"line" : 79,
 				"parent" : 2
 			},
 			{
 				"command" : 2,
 				"file" : 1,
-				"line" : 71,
+				"line" : 73,
 				"parent" : 2
 			}
 		]
@@ -79,11 +79,11 @@
 				},
 				{
 					"backtrace" : 3,
-					"path" : "C:/Users/xuang/Documents/Courses/ELEC3300/HKUST-ELEC3300-Project/Drivers/STM32F1xx_HAL_Driver/Inc/Legacy"
+					"path" : "C:/Users/xuang/Documents/Courses/ELEC3300/HKUST-ELEC3300-Project/Drivers/STM32F1xx_HAL_Driver/Inc"
 				},
 				{
 					"backtrace" : 3,
-					"path" : "C:/Users/xuang/Documents/Courses/ELEC3300/HKUST-ELEC3300-Project/Drivers/STM32F1xx_HAL_Driver/Inc"
+					"path" : "C:/Users/xuang/Documents/Courses/ELEC3300/HKUST-ELEC3300-Project/Drivers/STM32F1xx_HAL_Driver/Inc/Legacy"
 				},
 				{
 					"backtrace" : 3,
@@ -142,11 +142,11 @@
 				},
 				{
 					"backtrace" : 3,
-					"path" : "C:/Users/xuang/Documents/Courses/ELEC3300/HKUST-ELEC3300-Project/Drivers/STM32F1xx_HAL_Driver/Inc/Legacy"
+					"path" : "C:/Users/xuang/Documents/Courses/ELEC3300/HKUST-ELEC3300-Project/Drivers/STM32F1xx_HAL_Driver/Inc"
 				},
 				{
 					"backtrace" : 3,
-					"path" : "C:/Users/xuang/Documents/Courses/ELEC3300/HKUST-ELEC3300-Project/Drivers/STM32F1xx_HAL_Driver/Inc"
+					"path" : "C:/Users/xuang/Documents/Courses/ELEC3300/HKUST-ELEC3300-Project/Drivers/STM32F1xx_HAL_Driver/Inc/Legacy"
 				},
 				{
 					"backtrace" : 3,
@@ -229,7 +229,9 @@
 				14,
 				15,
 				16,
-				17
+				17,
+				18,
+				19
 			]
 		}
 	],
@@ -281,6 +283,18 @@
 			"backtrace" : 3,
 			"isGenerated" : true,
 			"path" : "build/Debug/cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_gpio_ex.c.obj",
+			"sourceGroupIndex" : 2
+		},
+		{
+			"backtrace" : 3,
+			"isGenerated" : true,
+			"path" : "build/Debug/cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim.c.obj",
+			"sourceGroupIndex" : 2
+		},
+		{
+			"backtrace" : 3,
+			"isGenerated" : true,
+			"path" : "build/Debug/cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F1xx_HAL_Driver/Src/stm32f1xx_hal_tim_ex.c.obj",
 			"sourceGroupIndex" : 2
 		},
 		{
