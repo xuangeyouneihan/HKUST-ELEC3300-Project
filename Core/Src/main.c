@@ -604,6 +604,11 @@ void motorControl(int32_t delta_MotorL, int32_t delta_MotorR)
   int32_t stepsR = (delta_MotorR > 0) ? delta_MotorR : -delta_MotorR;
   int32_t maxSteps = (stepsL > stepsR) ? stepsL : stepsR;
 
+  if (stepsL == 0 && stepsR == 0)
+  {
+    return; // no movement
+  }
+
   // Bresenham's line algorithm
   // Basic:
   // move using unit-length of the longer axis, then apply change of the other axis with error accumulation.
