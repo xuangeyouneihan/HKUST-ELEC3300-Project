@@ -21,9 +21,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
 #include <math.h>
-
+#include <stdbool.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -753,8 +752,8 @@ void motorControl(int32_t delta_MotorL, int32_t delta_MotorR)
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1); // motorL
   HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3); // motorR
   // start with 0% duty cycle
-  HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 0);
-  HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, 0);
+  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 0);
+  __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, 0);
 
   // 
   int32_t remainingStepsL = stepsL;
