@@ -747,12 +747,20 @@ void motorControl(int32_t delta_MotorL, int32_t delta_MotorR)
   int32_t stepsL = (delta_MotorL > 0) ? delta_MotorL : -delta_MotorL;
   int32_t stepsR = (delta_MotorR > 0) ? delta_MotorR : -delta_MotorR;
   int32_t maxSteps = (stepsL > stepsR) ? stepsL : stepsR;
+  if (stepsL == 0 && stepsR == 0) return; // no movement
 
-  if (stepsL == 0 && stepsR == 0)
-  {
-    return; // no movement
-  }
+  // Activate PWM channels for hardware pulse generation
+  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1); // motorL
+  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3); // motorR
+  // start with 0% duty cycle
+  HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 0);
+  HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, 0);
 
+  // 
+  int32_t remainingStepsL = stepsL;
+  int32_t remainingStepsR = stepsR;
+
+    
   // Bresenham's line algorithm
   // Basic:
   // move using unit-length of the longer axis, then apply change of the other axis with error accumulation.
@@ -766,35 +774,72 @@ void motorControl(int32_t delta_MotorL, int32_t delta_MotorR)
 
   for (int i = 0; i < maxSteps; i++)
   {
-    // check motorL error
+    bool motorL_working = false;
+    bool motorR_working = false;
+
+
+    // left motor should step?
     if (error_L >= stepsL)
     {
-      if (stepsL > 0)
+      if (remainingStepsL > 0) 
       {
-        HAL_GPIO_WritePin(GPIOB, MOTOR_L_STEP, GPIO_PIN_SET);
-        HAL_Delay(DFLT_STEP_T);
-        HAL_GPIO_WritePin(GPIOB, MOTOR_L_STEP, GPIO_PIN_RESET);
+        // Lagacy: delay stepping
+        // HAL_GPIO_WritePin(GPIOB, MOTOR_L_STEP, GPIO_PIN_SET);
+        // HAL_Delay(DFLT_STEP_T);
+        // HAL_GPIO_WritePin(GPIOB, MOTOR_L_STEP, GPIO_PIN_RESET);
+
+        // PWM stepping
+        motorL_working = true;
+        remainingStepsL--;
       }
       error_L -= maxSteps;
     }
-    // step motorR
+    // right motor should step?
     if (error_R >= stepsR)
     {
-      if (stepsR > 0)
+      if (remainingStepsR > 0)
       {
-        HAL_GPIO_WritePin(GPIOB, MOTOR_R_STEP, GPIO_PIN_SET);
-        HAL_Delay(DFLT_STEP_T);
-        HAL_GPIO_WritePin(GPIOB, MOTOR_R_STEP, GPIO_PIN_RESET);
+        // Lagacy: delay stepping
+        // HAL_GPIO_WritePin(GPIOB, MOTOR_R_STEP, GPIO_PIN_SET);
+        // HAL_Delay(DFLT_STEP_T);
+        // HAL_GPIO_WritePin(GPIOB, MOTOR_R_STEP, GPIO_PIN_RESET);
+
+        // PWM stepping
+        motorR_working = true;
+        remainingStepsR--;
       }
       error_R -= maxSteps;
     }
-
     // update error
     error_L += stepsL;
     error_R += stepsR;
 
+
+    // PWM stepping
+    if (motorL_working) {
+      // PWM 50% (72)
+      __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 36);
+    } else {
+      //  PWM 0%
+      __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 0);
+    }
+
+    if (motorR_working) {
+      // PWM 50% (72)
+      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, 36);
+    } else {
+      //  PWM 0%
+      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, 0);
+    }
+
     HAL_Delay(1);
   }
+
+  // stop PWM channels
+  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 0);
+  __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, 0);
+  HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_1);
+  HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_3);
 }
 
 // WARNING:
