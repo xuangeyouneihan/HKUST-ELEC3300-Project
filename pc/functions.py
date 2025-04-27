@@ -2,7 +2,8 @@ from fontTools.pens.boundsPen import BoundsPen
 from fontTools.pens.recordingPen import RecordingPen
 import yaml
 import unicodedata
-from fontTools.ttLib import TTFont
+from fontTools.ttLib import TTFont, TTCollection
+import os
 
 
 def pt_to_mm(points):
@@ -284,7 +285,7 @@ def get_stroke_points_in_mm(font, char, point_size):
     
     if "glyf" in font:
         glyph_obj = font["glyf"][glyph_name]
-        glyph_obj.draw(pen)
+        glyph_obj.draw(pen, font["glyf"])
     elif "CFF " in font:
         try:
             cff_table = font["CFF "].cff
@@ -308,6 +309,19 @@ def get_stroke_points_in_mm(font, char, point_size):
         strokes.append(stroke_points)
     
     return strokes
+
+def load_font(font_path, font_number=0):
+    """
+    根据字体文件路径加载字体。
+    如果是 TTC 或 OTC 字体集合，则返回集合中的第 font_number 个字体。
+    否则直接加载返回 TTFont 对象。
+    """
+    ext = os.path.splitext(font_path)[1].lower()
+    if ext in [".ttc", ".otc"]:
+        collection = TTCollection(font_path)
+        return collection.fonts[font_number]
+    else:
+        return TTFont(font_path)
 
 def prepare_writing_robot_data(text, font_path, point_size):
     """
@@ -333,7 +347,7 @@ def prepare_writing_robot_data(text, font_path, point_size):
     均以毫米为单位，坐标直接以基线 y=0 为原点。
     """
     # 加载字体文件
-    font = TTFont(font_path)
+    font = load_font(font_path)
     
     # 提取全局行高相关参数（单位：毫米）
     ascender = get_ascender_in_mm(font, point_size)

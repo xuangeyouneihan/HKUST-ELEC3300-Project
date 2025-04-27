@@ -1,0 +1,161 @@
+{
+	"inputs" : 
+	[
+		{
+			"path" : "CMakeLists.txt"
+		},
+		{
+			"path" : "cmake/gcc-arm-none-eabi.cmake"
+		},
+		{
+			"isGenerated" : true,
+			"path" : "C:/Users/xuang/Documents/Courses/ELEC3300/HKUST-ELEC3300-Project/build/CMakeFiles/3.30.4/CMakeSystem.cmake"
+		},
+		{
+			"isCMake" : true,
+			"isExternal" : true,
+			"path" : "C:/ProgramData/scoop/apps/mingw-winlibs-llvm-ucrt/14.2.0-19.1.1-12.0.0-r2/share/cmake-3.30/Modules/CMakeSystemSpecificInitialize.cmake"
+		},
+		{
+			"isGenerated" : true,
+			"path" : "C:/Users/xuang/Documents/Courses/ELEC3300/HKUST-ELEC3300-Project/build/CMakeFiles/3.30.4/CMakeCCompiler.cmake"
+		},
+		{
+			"isGenerated" : true,
+			"path" : "C:/Users/xuang/Documents/Courses/ELEC3300/HKUST-ELEC3300-Project/build/CMakeFiles/3.30.4/CMakeCXXCompiler.cmake"
+		},
+		{
+			"isCMake" : true,
+			"isExternal" : true,
+			"path" : "C:/ProgramData/scoop/apps/mingw-winlibs-llvm-ucrt/14.2.0-19.1.1-12.0.0-r2/share/cmake-3.30/Modules/CMakeSystemSpecificInformation.cmake"
+		},
+		{
+			"isCMake" : true,
+			"isExternal" : true,
+			"path" : "C:/ProgramData/scoop/apps/mingw-winlibs-llvm-ucrt/14.2.0-19.1.1-12.0.0-r2/share/cmake-3.30/Modules/CMakeGenericSystem.cmake"
+		},
+		{
+			"isCMake" : true,
+			"isExternal" : true,
+			"path" : "C:/ProgramData/scoop/apps/mingw-winlibs-llvm-ucrt/14.2.0-19.1.1-12.0.0-r2/share/cmake-3.30/Modules/CMakeInitializeConfigs.cmake"
+		},
+		{
+			"isCMake" : true,
+			"isExternal" : true,
+			"path" : "C:/ProgramData/scoop/apps/mingw-winlibs-llvm-ucrt/14.2.0-19.1.1-12.0.0-r2/share/cmake-3.30/Modules/Platform/Generic.cmake"
+		},
+		{
+			"isCMake" : true,
+			"isExternal" : true,
+			"path" : "C:/ProgramData/scoop/apps/mingw-winlibs-llvm-ucrt/14.2.0-19.1.1-12.0.0-r2/share/cmake-3.30/Modules/CMakeCInformation.cmake"
+		},
+		{
+			"isCMake" : true,
+			"isExternal" : true,
+			"path" : "C:/ProgramData/scoop/apps/mingw-winlibs-llvm-ucrt/14.2.0-19.1.1-12.0.0-r2/share/cmake-3.30/Modules/CMakeLanguageInformation.cmake"
+		},
+		{
+			"isCMake" : true,
+			"isExternal" : true,
+			"path" : "C:/ProgramData/scoop/apps/mingw-winlibs-llvm-ucrt/14.2.0-19.1.1-12.0.0-r2/share/cmake-3.30/Modules/Compiler/GNU-C.cmake"
+		},
+		{
+			"isCMake" : true,
+			"isExternal" : true,
+			"path" : "C:/ProgramData/scoop/apps/mingw-winlibs-llvm-ucrt/14.2.0-19.1.1-12.0.0-r2/share/cmake-3.30/Modules/Compiler/GNU.cmake"
+		},
+		{
+			"isCMake" : true,
+			"isExternal" : true,
+			"path" : "C:/ProgramData/scoop/apps/mingw-winlibs-llvm-ucrt/14.2.0-19.1.1-12.0.0-r2/share/cmake-3.30/Modules/Compiler/CMakeCommonCompilerMacros.cmake"
+		},
+		{
+			"isCMake" : true,
+			"isExternal" : true,
+			"path" : "C:/ProgramData/scoop/apps/mingw-winlibs-llvm-ucrt/14.2.0-19.1.1-12.0.0-r2/share/cmake-3.30/Modules/Platform/Generic.cmake"
+		},
+		{
+			"isCMake" : true,
+			"isExternal" : true,
+			"path" : "C:/ProgramData/scoop/apps/mingw-winlibs-llvm-ucrt/14.2.0-19.1.1-12.0.0-r2/share/cmake-3.30/Modules/CMakeCommonLanguageInclude.cmake"
+		},
+		{
+			"isCMake" : true,
+			"isExternal" : true,
+			"path" : "C:/ProgramData/scoop/apps/mingw-winlibs-llvm-ucrt/14.2.0-19.1.1-12.0.0-r2/share/cmake-3.30/Modules/CMakeCXXInformation.cmake"
+		},
+		{
+			"isCMake" : true,
+			"isExternal" : true,
+			"path" : "C:/ProgramData/scoop/apps/mingw-winlibs-llvm-ucrt/14.2.0-19.1.1-12.0.0-r2/share/cmake-3.30/Modules/CMakeLanguageInformation.cmake"
+		},
+		{
+			"isCMake" : true,
+			"isExternal" : true,
+			"path" : "C:/ProgramData/scoop/apps/mingw-winlibs-llvm-ucrt/14.2.0-19.1.1-12.0.0-r2/share/cmake-3.30/Modules/Compiler/GNU-CXX.cmake"
+		},
+		{
+			"isCMake" : true,
+			"isExternal" : true,
+			"path" : "C:/ProgramData/scoop/apps/mingw-winlibs-llvm-ucrt/14.2.0-19.1.1-12.0.0-r2/share/cmake-3.30/Modules/Compiler/GNU.cmake"
+		},
+		{
+			"isCMake" : true,
+			"isExternal" : true,
+			"path" : "C:/ProgramData/scoop/apps/mingw-winlibs-llvm-ucrt/14.2.0-19.1.1-12.0.0-r2/share/cmake-3.30/Modules/Platform/Generic.cmake"
+		},
+		{
+			"isCMake" : true,
+			"isExternal" : true,
+			"path" : "C:/ProgramData/scoop/apps/mingw-winlibs-llvm-ucrt/14.2.0-19.1.1-12.0.0-r2/share/cmake-3.30/Modules/CMakeCommonLanguageInclude.cmake"
+		},
+		{
+			"isGenerated" : true,
+			"path" : "C:/Users/xuang/Documents/Courses/ELEC3300/HKUST-ELEC3300-Project/build/CMakeFiles/3.30.4/CMakeASMCompiler.cmake"
+		},
+		{
+			"isCMake" : true,
+			"isExternal" : true,
+			"path" : "C:/ProgramData/scoop/apps/mingw-winlibs-llvm-ucrt/14.2.0-19.1.1-12.0.0-r2/share/cmake-3.30/Modules/CMakeASMInformation.cmake"
+		},
+		{
+			"isCMake" : true,
+			"isExternal" : true,
+			"path" : "C:/ProgramData/scoop/apps/mingw-winlibs-llvm-ucrt/14.2.0-19.1.1-12.0.0-r2/share/cmake-3.30/Modules/Compiler/GNU-ASM.cmake"
+		},
+		{
+			"isCMake" : true,
+			"isExternal" : true,
+			"path" : "C:/ProgramData/scoop/apps/mingw-winlibs-llvm-ucrt/14.2.0-19.1.1-12.0.0-r2/share/cmake-3.30/Modules/Compiler/GNU.cmake"
+		},
+		{
+			"path" : "cmake/stm32cubemx/CMakeLists.txt"
+		},
+		{
+			"isCMake" : true,
+			"isExternal" : true,
+			"path" : "C:/ProgramData/scoop/apps/mingw-winlibs-llvm-ucrt/14.2.0-19.1.1-12.0.0-r2/share/cmake-3.30/Modules/CMakeASMInformation.cmake"
+		},
+		{
+			"isCMake" : true,
+			"isExternal" : true,
+			"path" : "C:/ProgramData/scoop/apps/mingw-winlibs-llvm-ucrt/14.2.0-19.1.1-12.0.0-r2/share/cmake-3.30/Modules/Compiler/GNU-ASM.cmake"
+		},
+		{
+			"isCMake" : true,
+			"isExternal" : true,
+			"path" : "C:/ProgramData/scoop/apps/mingw-winlibs-llvm-ucrt/14.2.0-19.1.1-12.0.0-r2/share/cmake-3.30/Modules/Compiler/GNU.cmake"
+		}
+	],
+	"kind" : "cmakeFiles",
+	"paths" : 
+	{
+		"build" : "C:/Users/xuang/Documents/Courses/ELEC3300/HKUST-ELEC3300-Project/build",
+		"source" : "C:/Users/xuang/Documents/Courses/ELEC3300/HKUST-ELEC3300-Project/stm32"
+	},
+	"version" : 
+	{
+		"major" : 1,
+		"minor" : 1
+	}
+}
