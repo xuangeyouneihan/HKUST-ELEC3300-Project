@@ -28,6 +28,48 @@
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 
+
+// Data structures for character information
+// Data hierarchy:
+// Document -> Segment -> Character -> Stroke -> Point
+typedef struct {
+  float x;
+  float y;
+} Point; // Point structure to represent coordinates
+
+typedef struct {
+  Point* points;
+  int pointCount;
+} Stroke; // Stroke structure to represent a series of points
+
+typedef struct {
+  bool is_line_feed;
+  float advance_width;
+  float left_side_bearing;
+  Stroke* strokes;
+  int strokeCount;
+} Character; // Character structure to represent a character with its strokes
+
+typedef struct {
+  float ascender;
+  float descender;
+  float line_gap;
+  float paragraph_spacing;
+  Character* characters;
+  int characterCount;
+} Segment; // Segment structure to represent a segment of text with its characters
+
+typedef struct {
+  float page_width;
+  float page_height;
+  float top_margin;
+  float bottom_margin;
+  float left_margin;
+  float right_margin;
+  Segment* segments;
+  int segmentCount;
+} Document; // Document structure to represent a document with its segments
+
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -62,6 +104,9 @@ TIM_HandleTypeDef htim2;
 
 int32_t Global_X = 0;
 int32_t Global_Y = 0;
+// may use
+// int32_t Relative_X = 0;
+// int32_t Relative_Y = 0;
 
 /* USER CODE END PV */
 
@@ -701,6 +746,12 @@ void legacyMove(uint8_t direction, uint32_t time, uint8_t draw)
 }
 
 //
+// Quick search:
+// TODO; CAUTION; PROBLEM
+// WARNING
+//
+
+//
 // Continuous (stepping) motor controls
 //
 
@@ -849,6 +900,206 @@ void updateGlobalXY(float delta_X, float delta_Y)
   Global_X += (int32_t)delta_X;
   Global_Y += (int32_t)delta_Y;
 }
+
+
+//
+// document handling
+//
+// work flow:
+// 1. Document: Starting at page margins and working through segments
+// 2. Segment: Group up characters
+// 3. Character: Calculate starting position, Set up to strokes
+// 4. Stroke: Move through subsequent points
+//
+// amement: page function discarded, there is no auto paper feeder for that
+//
+
+
+// PROBLEM: 
+// The coordinate systems is not sattled yet.
+// having negative Y or not affects greatly on line changing.
+// where the origin is, to be defined
+
+
+
+void DrawDocument(Document* document) {
+  // set the starting position at the top left corner of the page
+  float Global_X = document->left_margin;
+  float Global_Y = document->top_margin;
+
+  // iterate through each segment in the document
+  for (int i = 0; i < document->segmentCount; i++) {
+    Segment* segment = &document->segments[i];
+
+    // check if the segment is empty
+    if (segment->characterCount > 0) {
+      // draw the segment at the current position
+      DrawSegment(segment, Global_X, Global_Y);
+    }
+  }
+}
+
+
+void DrawSegment(Segment* segment, float startX, float startY) {
+  float current_X = startX;
+  float current_Y = startY;
+
+  for (int i = 0; i < segment->characterCount; i++) {
+    Character* character = &segment->characters[i]; //
+
+    // check if character is line feed
+    if (character->is_line_feed) {
+      current_X = startX; // reset X position
+      current_Y += segment->ascender + segment->line_gap; // move to next line // CAUTION: I am not clear with ascender atm, may have problems
+    } else {
+      // draw the character at the current position
+      drawCharacter(character, current_X, current_Y);
+      // update the current X position for the next character
+      current_X += character->advance_width;
+    }
+  }
+}
+
+
+void drawCharacter(Character* character, float startX, float startY) {
+  // get teh relative starting position of the character
+  float CharStartX = startX + character->left_side_bearing;
+
+  // draw the strokes of the character
+  for (int i = 0; i < character->strokeCount; i++) {
+    Stroke* stroke = &character->strokes[i];
+    // adjust next stroke position
+    for (int j = 0; j < stroke->pointCount; j++) {
+      stroke->points[j].x += CharStartX;
+      stroke->points[j].y += startY + character->ascender; // CAUTION: I am not clear with ascender atm, may have problems
+    }
+    drawStroke(stroke)
+    // reset the points to the original position
+    for (int j = 0; j < stroke->pointCount; j++) {
+      stroke->points[j].x -= CharStartX;
+      stroke->points[j].y -= startY + character->ascender; // CAUTION: I am not clear with ascender atm, may have problems
+    }
+  }
+
+  // update the global position (Y need not update until next line feed)
+  updateGlobalXY(CharStartX + character->advance_width, Global_Y);
+}
+
+
+// Strokes are one continuous line, quantized to points
+void drawStroke(Stroke* stroke) {
+  if (stroke->pointCount <= 0) return; // No points to draw
+
+  // move to the first point
+  penup();
+  moveToXY(stroke->points[0].x, stroke->points[0].y);
+  pendown();
+
+  // draw the strokes
+  for (int i = 1; i < stroke->pointCount; i++) {
+    moveToXY(stroke->points[i].x, stroke->points[i].y);
+  }
+  penup();
+}
+
+
+//
+// data handling
+//
+// Free: Document -> Segment -> Character -> Stroke -> Points
+
+
+// free all data
+void freeAllData(Document* document) {
+  if (document) {
+    freeDocument(document); // Free the document and its segments
+    free(document); // Free the document itself
+  }
+}
+
+// free document memory
+void freeDocument(Document* document) {
+  if (document && document->segments) {
+    for (int i = 0; i < document->segmentCount; i++) {
+      freeSegment(&document->segments[i]); // Free each segment
+    }
+    free(document->segments); // Free the segments array
+    document->segments = NULL;
+  }
+}
+
+// free Sergment memory
+void freeSegment(Segment* segment) {
+  if (segment && segment->characters) {
+    for (int i = 0; i < segment->characterCount; i++) {
+      freeCharacter(&segment->characters[i]); // Free each character
+    }
+    free(segment->characters); // Free the characters array
+    segment->characters = NULL;
+  }
+}
+
+
+// free character memory
+void freeCharacter(Character* character) {
+  if (character && character->strokes) {
+    for (int i = 0; i < character->strokeCount; i++) {
+      freeStroke(&character->strokes[i]); // Free each stroke
+    }
+    free(character->strokes); // Free the strokes array
+    character->strokes = NULL;
+  }
+}
+
+
+// free strokes and point memory
+void freeStroke(Stroke *stroke) {
+  if (stroke && stroke->points) { // && to first check stroke, aviod segmentation fault
+    free(stroke->points); // Free the points array (no more pointers, should be done)
+    stroke->points = NULL;
+  }
+}
+  
+
+//
+// data creation
+//
+
+
+// WARNING:
+// Document is not created in this function at this moment, the data from yaml and RPC is not yet implemented
+Document* CreateDocument(Document* document, float page_width, float page_height, 
+  float top_margin, float bottom_margin, float left_margin, 
+  float right_margin, int segmentCount) {
+// Document* document = (Document*)malloc(sizeof(Document));
+document->page_width = page_width;
+document->page_height = page_height;
+document->top_margin = 10;
+document->bottom_margin = 10;
+document->left_margin = 10;
+document->right_margin = 10;
+document->segmentCount = 0;
+document->segments = NULL;
+
+}
+
+// Segment* CreateSegment(Segment* segment, int characterCount, float ascender, float descender, float line_gap) {
+
+//   return segment;
+// }
+
+// Character* CreateCharacter(Character* character, int strokeCount, float advance_width, float left_side_bearing, int is_line_feed) {
+
+//   return character;
+// }
+
+// Stroke* CreateStroke(Stroke* stroke, int pointCount) {
+
+//   return stroke;
+// }
+
+
+
 
 /* USER CODE END 4 */
 
