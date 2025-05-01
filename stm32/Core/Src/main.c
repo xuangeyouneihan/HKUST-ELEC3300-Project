@@ -28,47 +28,51 @@
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 
-
 // Data structures for character information
 // Data hierarchy:
 // Document -> Segment -> Character -> Stroke -> Point
-typedef struct {
+struct Point
+{
   float x;
   float y;
-} Point; // Point structure to represent coordinates
+}; // Point structure to represent coordinates
 
-typedef struct {
-  Point* points;
+struct Stroke
+{
+  struct Point *points;
   int pointCount;
-} Stroke; // Stroke structure to represent a series of points
+}; // Stroke structure to represent a series of points
 
-typedef struct {
+struct Character
+{
   bool is_line_feed;
   float advance_width;
   float left_side_bearing;
-  Stroke* strokes;
+  struct Stroke *strokes;
   int strokeCount;
-} Character; // Character structure to represent a character with its strokes
+}; // Character structure to represent a character with its strokes
 
-typedef struct {
+struct Segment
+{
   float ascender;
   float descender;
   float line_gap;
   float paragraph_spacing;
-  Character* characters;
+  struct Character *characters;
   int characterCount;
-} Segment; // Segment structure to represent a segment of text with its characters
+}; // Segment structure to represent a segment of text with its characters
 
-typedef struct {
+typedef struct Document
+{
   float page_width;
   float page_height;
   float top_margin;
   float bottom_margin;
   float left_margin;
   float right_margin;
-  Segment* segments;
+  struct Segment *segments;
   int segmentCount;
-} Document; // Document structure to represent a document with its segments
+}; // Document structure to represent a document with its segments
 
 /* USER CODE END PTD */
 
@@ -135,9 +139,9 @@ void drawRegularPentagon();
 /* USER CODE END 0 */
 
 /**
-  * @brief  The application entry point.
-  * @retval int
-  */
+ * @brief  The application entry point.
+ * @retval int
+ */
 int main(void)
 {
 
@@ -197,17 +201,17 @@ int main(void)
 }
 
 /**
-  * @brief System Clock Configuration
-  * @retval None
-  */
+ * @brief System Clock Configuration
+ * @retval None
+ */
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
   /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
+   * in the RCC_OscInitTypeDef structure.
+   */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
@@ -221,9 +225,8 @@ void SystemClock_Config(void)
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+   */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
@@ -236,10 +239,10 @@ void SystemClock_Config(void)
 }
 
 /**
-  * @brief TIM1 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief TIM1 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_TIM1_Init(void)
 {
 
@@ -311,14 +314,13 @@ static void MX_TIM1_Init(void)
 
   /* USER CODE END TIM1_Init 2 */
   HAL_TIM_MspPostInit(&htim1);
-
 }
 
 /**
-  * @brief TIM2 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief TIM2 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_TIM2_Init(void)
 {
 
@@ -370,14 +372,13 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 2 */
   HAL_TIM_MspPostInit(&htim2);
-
 }
 
 /**
-  * @brief GPIO Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief GPIO Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -391,7 +392,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10|GPIO_PIN_12|GPIO_PIN_14, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10 | GPIO_PIN_12 | GPIO_PIN_14, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET);
@@ -409,7 +410,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PB10 PB12 PB14 */
-  GPIO_InitStruct.Pin = GPIO_PIN_10|GPIO_PIN_12|GPIO_PIN_14;
+  GPIO_InitStruct.Pin = GPIO_PIN_10 | GPIO_PIN_12 | GPIO_PIN_14;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -797,7 +798,8 @@ void motorControl(int32_t delta_MotorL, int32_t delta_MotorR)
   int32_t stepsL = (delta_MotorL > 0) ? delta_MotorL : -delta_MotorL;
   int32_t stepsR = (delta_MotorR > 0) ? delta_MotorR : -delta_MotorR;
   int32_t maxSteps = (stepsL > stepsR) ? stepsL : stepsR;
-  if (stepsL == 0 && stepsR == 0) return; // no movement
+  if (stepsL == 0 && stepsR == 0)
+    return; // no movement
 
   // Activate PWM channels for hardware pulse generation
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1); // motorL
@@ -806,11 +808,10 @@ void motorControl(int32_t delta_MotorL, int32_t delta_MotorR)
   __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 0);
   __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, 0);
 
-  // 
+  //
   int32_t remainingStepsL = stepsL;
   int32_t remainingStepsR = stepsR;
 
-    
   // Bresenham's line algorithm
   // Basic:
   // move using unit-length of the longer axis, then apply change of the other axis with error accumulation.
@@ -827,11 +828,10 @@ void motorControl(int32_t delta_MotorL, int32_t delta_MotorR)
     bool motorL_working = false;
     bool motorR_working = false;
 
-
     // left motor should step?
     if (error_L >= stepsL)
     {
-      if (remainingStepsL > 0) 
+      if (remainingStepsL > 0)
       {
         // Lagacy: delay stepping
         // HAL_GPIO_WritePin(GPIOB, MOTOR_L_STEP, GPIO_PIN_SET);
@@ -864,20 +864,25 @@ void motorControl(int32_t delta_MotorL, int32_t delta_MotorR)
     error_L += stepsL;
     error_R += stepsR;
 
-
     // PWM stepping
-    if (motorL_working) {
+    if (motorL_working)
+    {
       // PWM 50% (72)
       __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 36);
-    } else {
+    }
+    else
+    {
       //  PWM 0%
       __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 0);
     }
 
-    if (motorR_working) {
+    if (motorR_working)
+    {
       // PWM 50% (72)
       __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, 36);
-    } else {
+    }
+    else
+    {
       //  PWM 0%
       __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, 0);
     }
@@ -901,7 +906,6 @@ void updateGlobalXY(float delta_X, float delta_Y)
   Global_Y += (int32_t)delta_Y;
 }
 
-
 //
 // document handling
 //
@@ -914,44 +918,48 @@ void updateGlobalXY(float delta_X, float delta_Y)
 // amement: page function discarded, there is no auto paper feeder for that
 //
 
-
-// PROBLEM: 
+// PROBLEM:
 // The coordinate systems is not sattled yet.
 // having negative Y or not affects greatly on line changing.
 // where the origin is, to be defined
 
-
-
-void DrawDocument(Document* document) {
+void DrawDocument(struct Document *document)
+{
   // set the starting position at the top left corner of the page
   float Global_X = document->left_margin;
   float Global_Y = document->top_margin;
 
   // iterate through each segment in the document
-  for (int i = 0; i < document->segmentCount; i++) {
-    Segment* segment = &document->segments[i];
+  for (int i = 0; i < document->segmentCount; i++)
+  {
+    struct Segment *segment = &document->segments[i];
 
     // check if the segment is empty
-    if (segment->characterCount > 0) {
+    if (segment->characterCount > 0)
+    {
       // draw the segment at the current position
       DrawSegment(segment, Global_X, Global_Y);
     }
   }
 }
 
-
-void DrawSegment(Segment* segment, float startX, float startY) {
+void DrawSegment(struct Segment *segment, float startX, float startY)
+{
   float current_X = startX;
   float current_Y = startY;
 
-  for (int i = 0; i < segment->characterCount; i++) {
-    Character* character = &segment->characters[i]; //
+  for (int i = 0; i < segment->characterCount; i++)
+  {
+    struct Character *character = &segment->characters[i]; //
 
     // check if character is line feed
-    if (character->is_line_feed) {
-      current_X = startX; // reset X position
+    if (character->is_line_feed)
+    {
+      current_X = startX;                                 // reset X position
       current_Y += segment->ascender + segment->line_gap; // move to next line // CAUTION: I am not clear with ascender atm, may have problems
-    } else {
+    }
+    else
+    {
       // draw the character at the current position
       drawCharacter(character, current_X, current_Y);
       // update the current X position for the next character
@@ -960,24 +968,27 @@ void DrawSegment(Segment* segment, float startX, float startY) {
   }
 }
 
-
-void drawCharacter(Character* character, float startX, float startY) {
+void drawCharacter(struct Character *character, float startX, float startY)
+{
   // get teh relative starting position of the character
   float CharStartX = startX + character->left_side_bearing;
 
   // draw the strokes of the character
-  for (int i = 0; i < character->strokeCount; i++) {
-    Stroke* stroke = &character->strokes[i];
+  for (int i = 0; i < character->strokeCount; i++)
+  {
+    struct Stroke *stroke = &character->strokes[i];
     // adjust next stroke position
-    for (int j = 0; j < stroke->pointCount; j++) {
+    for (int j = 0; j < stroke->pointCount; j++)
+    {
       stroke->points[j].x += CharStartX;
-      stroke->points[j].y += startY + character->ascender; // CAUTION: I am not clear with ascender atm, may have problems
+      stroke->points[j].y += startY + character->left_side_bearing;
     }
-    drawStroke(stroke)
+    drawStroke(stroke);
     // reset the points to the original position
-    for (int j = 0; j < stroke->pointCount; j++) {
+    for (int j = 0; j < stroke->pointCount; j++)
+    {
       stroke->points[j].x -= CharStartX;
-      stroke->points[j].y -= startY + character->ascender; // CAUTION: I am not clear with ascender atm, may have problems
+      stroke->points[j].y -= startY + character->left_side_bearing;
     }
   }
 
@@ -985,10 +996,11 @@ void drawCharacter(Character* character, float startX, float startY) {
   updateGlobalXY(CharStartX + character->advance_width, Global_Y);
 }
 
-
 // Strokes are one continuous line, quantized to points
-void drawStroke(Stroke* stroke) {
-  if (stroke->pointCount <= 0) return; // No points to draw
+void drawStroke(struct Stroke *stroke)
+{
+  if (stroke->pointCount <= 0)
+    return; // No points to draw
 
   // move to the first point
   penup();
@@ -996,31 +1008,35 @@ void drawStroke(Stroke* stroke) {
   pendown();
 
   // draw the strokes
-  for (int i = 1; i < stroke->pointCount; i++) {
+  for (int i = 1; i < stroke->pointCount; i++)
+  {
     moveToXY(stroke->points[i].x, stroke->points[i].y);
   }
   penup();
 }
-
 
 //
 // data handling
 //
 // Free: Document -> Segment -> Character -> Stroke -> Points
 
-
 // free all data
-void freeAllData(Document* document) {
-  if (document) {
+void freeAllData(struct Document *document)
+{
+  if (document)
+  {
     freeDocument(document); // Free the document and its segments
-    free(document); // Free the document itself
+    free(document);         // Free the document itself
   }
 }
 
 // free document memory
-void freeDocument(Document* document) {
-  if (document && document->segments) {
-    for (int i = 0; i < document->segmentCount; i++) {
+void freeDocument(struct Document *document)
+{
+  if (document && document->segments)
+  {
+    for (int i = 0; i < document->segmentCount; i++)
+    {
       freeSegment(&document->segments[i]); // Free each segment
     }
     free(document->segments); // Free the segments array
@@ -1029,9 +1045,12 @@ void freeDocument(Document* document) {
 }
 
 // free Sergment memory
-void freeSegment(Segment* segment) {
-  if (segment && segment->characters) {
-    for (int i = 0; i < segment->characterCount; i++) {
+void freeSegment(struct Segment *segment)
+{
+  if (segment && segment->characters)
+  {
+    for (int i = 0; i < segment->characterCount; i++)
+    {
       freeCharacter(&segment->characters[i]); // Free each character
     }
     free(segment->characters); // Free the characters array
@@ -1039,11 +1058,13 @@ void freeSegment(Segment* segment) {
   }
 }
 
-
 // free character memory
-void freeCharacter(Character* character) {
-  if (character && character->strokes) {
-    for (int i = 0; i < character->strokeCount; i++) {
+void freeCharacter(struct Character *character)
+{
+  if (character && character->strokes)
+  {
+    for (int i = 0; i < character->strokeCount; i++)
+    {
       freeStroke(&character->strokes[i]); // Free each stroke
     }
     free(character->strokes); // Free the strokes array
@@ -1051,36 +1072,35 @@ void freeCharacter(Character* character) {
   }
 }
 
-
 // free strokes and point memory
-void freeStroke(Stroke *stroke) {
-  if (stroke && stroke->points) { // && to first check stroke, aviod segmentation fault
+void freeStroke(struct Stroke *stroke)
+{
+  if (stroke && stroke->points)
+  {                       // && to first check stroke, aviod segmentation fault
     free(stroke->points); // Free the points array (no more pointers, should be done)
     stroke->points = NULL;
   }
 }
-  
 
 //
 // data creation
 //
 
-
 // WARNING:
 // Document is not created in this function at this moment, the data from yaml and RPC is not yet implemented
-Document* CreateDocument(Document* document, float page_width, float page_height, 
-  float top_margin, float bottom_margin, float left_margin, 
-  float right_margin, int segmentCount) {
-// Document* document = (Document*)malloc(sizeof(Document));
-document->page_width = page_width;
-document->page_height = page_height;
-document->top_margin = 10;
-document->bottom_margin = 10;
-document->left_margin = 10;
-document->right_margin = 10;
-document->segmentCount = 0;
-document->segments = NULL;
-
+struct Document *CreateDocument(struct Document *document, float page_width, float page_height,
+                                float top_margin, float bottom_margin, float left_margin,
+                                float right_margin, int segmentCount)
+{
+  // Document* document = (Document*)malloc(sizeof(Document));
+  document->page_width = page_width;
+  document->page_height = page_height;
+  document->top_margin = 10;
+  document->bottom_margin = 10;
+  document->left_margin = 10;
+  document->right_margin = 10;
+  document->segmentCount = 0;
+  document->segments = NULL;
 }
 
 // Segment* CreateSegment(Segment* segment, int characterCount, float ascender, float descender, float line_gap) {
@@ -1098,15 +1118,12 @@ document->segments = NULL;
 //   return stroke;
 // }
 
-
-
-
 /* USER CODE END 4 */
 
 /**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
+ * @brief  This function is executed in case of error occurrence.
+ * @retval None
+ */
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
@@ -1118,14 +1135,14 @@ void Error_Handler(void)
   /* USER CODE END Error_Handler_Debug */
 }
 
-#ifdef  USE_FULL_ASSERT
+#ifdef USE_FULL_ASSERT
 /**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
+ * @brief  Reports the name of the source file and the source line number
+ *         where the assert_param error has occurred.
+ * @param  file: pointer to the source file name
+ * @param  line: assert_param error line source number
+ * @retval None
+ */
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
