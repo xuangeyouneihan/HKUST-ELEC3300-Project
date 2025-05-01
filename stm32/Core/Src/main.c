@@ -927,7 +927,8 @@ void DrawDocument(struct Document *document)
 {
   // set the starting position at the top left corner of the page
   float Global_X = document->left_margin;
-  float Global_Y = document->top_margin;
+  float Global_Y = -(document->top_margin);
+  float scale = 1; // TODO: find the relationship between mm and moving time
 
   // iterate through each segment in the document
   for (int i = 0; i < document->segmentCount; i++)
@@ -938,39 +939,45 @@ void DrawDocument(struct Document *document)
     if (segment->characterCount > 0)
     {
       // draw the segment at the current position
-      DrawSegment(segment, Global_X, Global_Y);
+      DrawSegment(segment, &Global_X, &Global_Y, document->page_width, document->page_height, document->top_margin, document->bottom_margin, document->left_margin, document->right_margin, scale);
     }
   }
 }
 
-void DrawSegment(struct Segment *segment, float startX, float startY)
+void DrawSegment(struct Segment *segment, float *Global_X, float *Global_Y, float page_width, float page_height, float top_margin, float bottom_margin, float left_margin, float right_margin, float scale)
 {
-  float current_X = startX;
-  float current_Y = startY;
+  float current_X = *Global_X;
+  float current_Y = *Global_Y - segment->ascender;
 
   for (int i = 0; i < segment->characterCount; i++)
   {
-    struct Character *character = &segment->characters[i]; //
+    struct Character *character = &segment->characters[i];
 
-    // check if character is line feed
-    if (character->is_line_feed)
+    // check if a new line is needed
+    if (current_X + character->advance_width >= page_width - right_margin || character->is_line_feed)
     {
-      current_X = startX;                                 // reset X position
-      current_Y += segment->ascender + segment->line_gap; // move to next line // CAUTION: I am not clear with ascender atm, may have problems
+      current_X = left_margin;                                                   // reset X position
+      current_Y -= (segment->ascender + segment->descender + segment->line_gap); // move to next line
     }
     else
     {
       // draw the character at the current position
-      drawCharacter(character, current_X, current_Y);
+      drawCharacter(character, current_X, current_Y, scale);
       // update the current X position for the next character
       current_X += character->advance_width;
     }
   }
+
+  current_Y += segment->ascender;
+  // update global XY
+  *Global_X = current_X;
+  *Global_Y = current_Y;
+  // TODO: detect if the current position exceeds the bottom edge
 }
 
-void drawCharacter(struct Character *character, float startX, float startY)
+void drawCharacter(struct Character *character, float startX, float startY, float scale)
 {
-  // get teh relative starting position of the character
+  // get the relative starting position of the character
   float CharStartX = startX + character->left_side_bearing;
 
   // draw the strokes of the character
@@ -980,20 +987,17 @@ void drawCharacter(struct Character *character, float startX, float startY)
     // adjust next stroke position
     for (int j = 0; j < stroke->pointCount; j++)
     {
-      stroke->points[j].x += CharStartX;
-      stroke->points[j].y += startY + character->left_side_bearing;
+      stroke->points[j].x = (stroke->points[j].x + CharStartX) * scale;
+      stroke->points[j].y = (stroke->points[j].y + startY) * scale;
     }
     drawStroke(stroke);
     // reset the points to the original position
     for (int j = 0; j < stroke->pointCount; j++)
     {
-      stroke->points[j].x -= CharStartX;
-      stroke->points[j].y -= startY + character->left_side_bearing;
+      stroke->points[j].x = (stroke->points[j].x / scale) - CharStartX;
+      stroke->points[j].y = (stroke->points[j].y / scale) - startY;
     }
   }
-
-  // update the global position (Y need not update until next line feed)
-  updateGlobalXY(CharStartX + character->advance_width, Global_Y);
 }
 
 // Strokes are one continuous line, quantized to points
@@ -1003,14 +1007,13 @@ void drawStroke(struct Stroke *stroke)
     return; // No points to draw
 
   // move to the first point
-  penup();
-  moveToXY(stroke->points[0].x, stroke->points[0].y);
+  moveToAbsoluteXY(stroke->points[0].x, stroke->points[0].y);
   pendown();
 
   // draw the strokes
   for (int i = 1; i < stroke->pointCount; i++)
   {
-    moveToXY(stroke->points[i].x, stroke->points[i].y);
+    moveToAbsoluteXY(stroke->points[i].x, stroke->points[i].y);
   }
   penup();
 }
