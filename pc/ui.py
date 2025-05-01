@@ -4,6 +4,7 @@ from tkinter import ttk, messagebox, filedialog
 import yaml
 import os
 from matplotlib import font_manager
+import numpy as np
 
 # 引入已有的 prepare_writing_robot_data 函数
 from functions import prepare_writing_robot_data

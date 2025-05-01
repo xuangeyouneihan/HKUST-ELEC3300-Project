@@ -4,7 +4,9 @@ import yaml
 import unicodedata
 from fontTools.ttLib import TTFont, TTCollection
 import os
-
+import numpy as np
+from skimage.morphology import skeletonize
+import cv2
 
 def pt_to_mm(points):
     """
@@ -264,13 +266,57 @@ class StrokePen(object):
             self.strokes.append(self.current_stroke)
             self.current_stroke = []
 
-def get_stroke_points_in_mm(font, char, point_size):
+def skeletonize_glyph(recorder, upm, point_size):
     """
-    根据字体、字符和目标字号（point），提取该字符所有笔画上的坐标点（单位：毫米）。
-    坐标点按笔顺排列，直接以字体坐标（基线 y=0 为原点）为准，不做额外平移。
-    支持汉字。
+    通过图像骨架化生成单线路径（辅助函数）。
+    支持两种情况：若 recorder 具有属性 strokes，则使用 recorder.strokes；
+    否则使用 recorder.value。
     """
-    # 计算缩放因子：设计单位（upm）转换到目标 point 尺寸下
+    # 将矢量路径渲染为位图
+    size = int(upm * 2)  # 高分辨率保证精度
+    img = np.zeros((size, size), dtype=np.uint8)
+    
+    # 优先采用 recorder.strokes（如自定义 StrokePen），否则使用 recorder.value
+    input_contours = recorder.strokes if hasattr(recorder, "strokes") else recorder.value
+    
+    for contour in input_contours:
+        # 将轮廓列表转换为 NumPy 数组
+        pts = np.array(contour, dtype=np.int32)
+        pts = (pts + size // 2).clip(0, size - 1)
+        cv2.fillPoly(img, [pts], 255)
+    
+    # 骨架化处理：将位图二值化后执行骨架化
+    skeleton = skeletonize(img // 255)
+    skeleton = (skeleton * 255).astype(np.uint8)
+    
+    # 提取骨架轮廓并矢量化
+    contours, _ = cv2.findContours(skeleton, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+    
+    scale = point_size / upm
+    strokes = []
+    for contour in contours:
+        # 使用 squeeze() 展平轮廓数据
+        c = contour.squeeze()
+        if c.ndim == 1:
+            c = np.atleast_2d(c)
+        stroke = []
+        for pt in c:  # 现在 c 的形状为 (N, 2)
+            x = (pt[0] - size // 2) * scale
+            y = (pt[1] - size // 2) * scale
+            # 转为内置 float 类型，单位转换：1 point ≈ 0.3527 mm
+            stroke.append([float(x * 0.3527), float(y * 0.3527)])
+        strokes.append(stroke)
+    
+    return strokes
+
+def get_stroke_points_in_mm(font, char, point_size, simplify_threshold=10, is_single_line_font=True):
+    """
+    改进版：弃用 RecordingPen，改用自定义 StrokePen，
+    将双线路径简化为单线，并提取坐标点（毫米单位）。
+    参数：
+        simplify_threshold: 路径简化阈值（值越小，简化程度越高）。
+    """
+    # 计算缩放因子（设计单位到毫米），注意后续转换：1 point ≈ 0.3527 mm
     upm = font["head"].unitsPerEm
     scale = point_size / upm
 
@@ -280,12 +326,12 @@ def get_stroke_points_in_mm(font, char, point_size):
     if code not in cmap:
         return None
     glyph_name = cmap[code]
-    
+
+    # 用自定义的 StrokePen 替换 RecordingPen
     pen = StrokePen(scale=scale)
-    
     if "glyf" in font:
-        glyph_obj = font["glyf"][glyph_name]
-        glyph_obj.draw(pen, font["glyf"])
+        glyph = font["glyf"][glyph_name]
+        glyph.draw(pen, font["glyf"])
     elif "CFF " in font:
         try:
             cff_table = font["CFF "].cff
@@ -294,19 +340,19 @@ def get_stroke_points_in_mm(font, char, point_size):
             charString.draw(pen)
         except Exception:
             return None
+
+    if not is_single_line_font:
+        # 选项：对笔画进行图像骨架化处理
+        # 请确保 skeletonize_glyph 函数内部已修改为：
+        # 遍历 (pen.strokes if hasattr(pen, 'strokes') else pen.value)
+        strokes = skeletonize_glyph(pen, upm, point_size)
     else:
-        return None
-
-    if pen.current_stroke:
-        pen.strokes.append(pen.current_stroke)
-
-    # 将每个点转换为毫米单位，同时使用列表而不是元组，避免 YAML 中出现 !!python/tuple
-    strokes = []
-    for stroke in pen.strokes:
-        stroke_points = []
-        for (x, y) in stroke:
-            stroke_points.append([pt_to_mm(x), pt_to_mm(y)])
-        strokes.append(stroke_points)
+        strokes = []
+        for stroke in pen.strokes:
+            stroke_points = []
+            for (x, y) in stroke:
+                stroke_points.append([pt_to_mm(x), pt_to_mm(y)])
+            strokes.append(stroke_points)
     
     return strokes
 
