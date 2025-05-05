@@ -80,10 +80,12 @@ typedef struct Document
 /* USER CODE BEGIN PD */
 
 // Motor directions
-#define MOTOR_L_DIR GPIO_PIN_12
-#define MOTOR_L_STEP GPIO_PIN_13
-#define MOTOR_R_DIR GPIO_PIN_14
-#define MOTOR_R_STEP GPIO_PIN_15
+#define MOTOR_L_DIR GPIO_PIN_10 // B10
+#define MOTOR_L_STEP GPIO_PIN_2 // A2
+#define MOTOR_R_DIR GPIO_PIN_9  // B9
+#define MOTOR_R_STEP GPIO_PIN_3 // A3
+#define MOTOR_Z_DIR GPIO_PIN_12 // B12
+#define MOTOR_Z_STEP GPIO_PIN_8 // A8
 
 #define DIR_CW GPIO_PIN_SET
 #define DIR_CCW GPIO_PIN_RESET
@@ -141,7 +143,7 @@ void freeSegment(struct Segment *segment);
 void freeCharacter(struct Character *character);
 void freeStroke(struct Stroke *stroke);
 
-struct Document *CreateDocument(int segmentCount, float page_height, float top_margin, float bottom_margin,  float left_margin, float right_margin,  float page_width);
+struct Document *CreateDocument(int segmentCount, float page_height, float top_margin, float bottom_margin, float left_margin, float right_margin, float page_width);
 struct Segment *CreateSegment(int characterCount, float ascender, float descender, float line_gap, float paragraph_spacing);
 struct Character *CreateCharacter(int strokeCount, float advance_width, float left_side_bearing, bool is_line_feed);
 struct Stroke *CreateStroke(int pointCount);
@@ -236,7 +238,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL2;
+  RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL9;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -247,10 +249,10 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
   {
     Error_Handler();
   }
@@ -277,7 +279,7 @@ static void MX_TIM1_Init(void)
 
   /* USER CODE END TIM1_Init 1 */
   htim1.Instance = TIM1;
-  htim1.Init.Prescaler = 99;
+  htim1.Init.Prescaler = 1999;
   htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim1.Init.Period = 71;
   htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -303,17 +305,13 @@ static void MX_TIM1_Init(void)
     Error_Handler();
   }
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 35;
+  sConfigOC.Pulse = 36;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCNPolarity = TIM_OCNPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   sConfigOC.OCIdleState = TIM_OCIDLESTATE_RESET;
   sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
   if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
   {
     Error_Handler();
   }
@@ -354,7 +352,7 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 99;
+  htim2.Init.Prescaler = 999;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim2.Init.Period = 71;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -379,9 +377,13 @@ static void MX_TIM2_Init(void)
     Error_Handler();
   }
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 35;
+  sConfigOC.Pulse = 36;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
+  {
+    Error_Handler();
+  }
   if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_4) != HAL_OK)
   {
     Error_Handler();
@@ -410,7 +412,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10 | GPIO_PIN_12 | GPIO_PIN_14, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10 | GPIO_PIN_12 | GPIO_PIN_9, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET);
@@ -427,8 +429,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PB10 PB12 PB14 */
-  GPIO_InitStruct.Pin = GPIO_PIN_10 | GPIO_PIN_12 | GPIO_PIN_14;
+  /*Configure GPIO pins : PB10 PB12 PB9 */
+  GPIO_InitStruct.Pin = GPIO_PIN_10 | GPIO_PIN_12 | GPIO_PIN_9;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -640,24 +642,18 @@ void drawRegularPentagon()
 
 void penup()
 {
-  uint32_t tick = HAL_GetTick();
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);
-  while (HAL_GetTick() - tick < 100)
-  {
-    HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_11);
-    HAL_Delay(1);
-  }
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
+  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+  HAL_Delay(100);
+  HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_1);
 }
 
 void pendown()
 {
-  uint32_t tick = HAL_GetTick();
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
-  while (HAL_GetTick() - tick < 100)
-  {
-    HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_11);
-    HAL_Delay(1);
-  }
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
+  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+  HAL_Delay(100);
+  HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_1);
 }
 
 void legacyMove(uint8_t direction, uint32_t time, uint8_t draw)
@@ -820,11 +816,11 @@ void motorControl(int32_t delta_MotorL, int32_t delta_MotorR)
     return; // no movement
 
   // Activate PWM channels for hardware pulse generation
-  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1); // motorL
-  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3); // motorR
+  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_3); // motorL
+  HAL_TIM_PWM_Start(&htim2, TIM_CHANNEL_4); // motorR
   // start with 0% duty cycle
-  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 0);
   __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, 0);
+  __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_4, 0);
 
   //
   int32_t remainingStepsL = stepsL;
@@ -886,17 +882,6 @@ void motorControl(int32_t delta_MotorL, int32_t delta_MotorR)
     if (motorL_working)
     {
       // PWM 50% (72)
-      __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 36);
-    }
-    else
-    {
-      //  PWM 0%
-      __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 0);
-    }
-
-    if (motorR_working)
-    {
-      // PWM 50% (72)
       __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, 36);
     }
     else
@@ -905,14 +890,25 @@ void motorControl(int32_t delta_MotorL, int32_t delta_MotorR)
       __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, 0);
     }
 
+    if (motorR_working)
+    {
+      // PWM 50% (72)
+      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_4, 36);
+    }
+    else
+    {
+      //  PWM 0%
+      __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_4, 0);
+    }
+
     HAL_Delay(1);
   }
 
   // stop PWM channels
-  __HAL_TIM_SET_COMPARE(&htim1, TIM_CHANNEL_1, 0);
   __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_3, 0);
-  HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_1);
+  __HAL_TIM_SET_COMPARE(&htim2, TIM_CHANNEL_4, 0);
   HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_3);
+  HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_4);
 }
 
 // WARNING:
@@ -962,11 +958,11 @@ void drawDocument(struct Document *document)
   }
 }
 
-void drawSegment(struct Segment *segment, float *Global_X, 
-                  float *Global_Y, float page_width, 
-                  float page_height, float top_margin, 
-                  float bottom_margin, float left_margin, 
-                  float right_margin, float scale)
+void drawSegment(struct Segment *segment, float *Global_X,
+                 float *Global_Y, float page_width,
+                 float page_height, float top_margin,
+                 float bottom_margin, float left_margin,
+                 float right_margin, float scale)
 {
   float current_X = *Global_X;
   float current_Y = *Global_Y - segment->ascender;
@@ -1039,7 +1035,6 @@ void drawStroke(struct Stroke *stroke)
   }
   penup();
 }
-
 
 //
 // data handling: free, create, add
@@ -1115,14 +1110,14 @@ void freeStroke(struct Stroke *stroke)
 // WARNING: ownership problems in add functions, not important in this project but do mind that
 
 struct Document *CreateDocument(int segmentCount, float page_height,
-                                float top_margin, float bottom_margin, 
-                                float left_margin, float right_margin, 
+                                float top_margin, float bottom_margin,
+                                float left_margin, float right_margin,
                                 float page_width)
 {
-  struct Document *Doc = (struct Document*)malloc(sizeof(struct Document));
-  if (Doc == NULL) return NULL; // alloc failed case
+  struct Document *Doc = (struct Document *)malloc(sizeof(struct Document));
+  if (Doc == NULL)
+    return NULL; // alloc failed case
 
-  
   Doc->page_width = page_width;
   Doc->page_height = page_height;
   Doc->top_margin = top_margin;
@@ -1130,28 +1125,34 @@ struct Document *CreateDocument(int segmentCount, float page_height,
   Doc->left_margin = left_margin;
   Doc->right_margin = right_margin;
   Doc->segmentCount = segmentCount;
-  // if content is given, 
-  // create the segments array with segmentCount, 
+  // if content is given,
+  // create the segments array with segmentCount,
   // then use AddSegmentToDocument() to later add segments
   if (segmentCount > 0)
   {
-    Doc->segments = (struct Segment*)malloc(sizeof(struct Segment) * segmentCount);
-    if (Doc->segments == NULL) { free(Doc); return NULL; } // alloc failed case
+    Doc->segments = (struct Segment *)malloc(sizeof(struct Segment) * segmentCount);
+    if (Doc->segments == NULL)
+    {
+      free(Doc);
+      return NULL;
+    }                                                                // alloc failed case
     memset(Doc->segments, 0, sizeof(struct Segment) * segmentCount); // init mem to zero
-  } 
-  else {
+  }
+  else
+  {
     Doc->segments = NULL;
   }
 
   return Doc;
 }
 
-struct Segment *CreateSegment(int characterCount, float ascender, 
-                        float descender, float line_gap, 
-                        float paragraph_spacing) 
+struct Segment *CreateSegment(int characterCount, float ascender,
+                              float descender, float line_gap,
+                              float paragraph_spacing)
 {
-  struct Segment *seg = (struct Segment*)malloc(sizeof(struct Segment));
-  if (seg == NULL) return NULL; // alloc failed case
+  struct Segment *seg = (struct Segment *)malloc(sizeof(struct Segment));
+  if (seg == NULL)
+    return NULL; // alloc failed case
 
   seg->ascender = ascender;
   seg->descender = descender;
@@ -1161,22 +1162,28 @@ struct Segment *CreateSegment(int characterCount, float ascender,
 
   if (characterCount > 0)
   {
-    seg->characters = (struct Character*)malloc(sizeof(struct Character) * characterCount);
-    if (seg->characters == NULL) { free(seg); return NULL; } // alloc failed case
+    seg->characters = (struct Character *)malloc(sizeof(struct Character) * characterCount);
+    if (seg->characters == NULL)
+    {
+      free(seg);
+      return NULL;
+    }                                                                      // alloc failed case
     memset(seg->characters, 0, sizeof(struct Character) * characterCount); // init mem to zero
-  } 
-  else {
+  }
+  else
+  {
     seg->characters = NULL;
   }
 
   return seg;
 }
 
-struct Character *CreateCharacter(int strokeCount, float advance_width, 
-                            float left_side_bearing, bool is_line_feed)
+struct Character *CreateCharacter(int strokeCount, float advance_width,
+                                  float left_side_bearing, bool is_line_feed)
 {
-  struct Character *chara = (struct Character*)malloc(sizeof(struct Character));
-  if (chara == NULL) return NULL; // alloc failed case
+  struct Character *chara = (struct Character *)malloc(sizeof(struct Character));
+  if (chara == NULL)
+    return NULL; // alloc failed case
 
   chara->advance_width = advance_width;
   chara->left_side_bearing = left_side_bearing;
@@ -1185,31 +1192,42 @@ struct Character *CreateCharacter(int strokeCount, float advance_width,
 
   if (strokeCount > 0)
   {
-    chara->strokes = (struct Stroke*)malloc(sizeof(struct Stroke) * strokeCount);
-    if (chara->strokes == NULL) { free(chara); return NULL; } // alloc failed case
+    chara->strokes = (struct Stroke *)malloc(sizeof(struct Stroke) * strokeCount);
+    if (chara->strokes == NULL)
+    {
+      free(chara);
+      return NULL;
+    }                                                               // alloc failed case
     memset(chara->strokes, 0, sizeof(struct Stroke) * strokeCount); // init mem to zero
-  } 
-  else {
+  }
+  else
+  {
     chara->strokes = NULL;
   }
 
   return chara;
 }
 
-struct Stroke *CreateStroke(int pointCount) 
+struct Stroke *CreateStroke(int pointCount)
 {
-  struct Stroke *stroke = (struct Stroke*)malloc(sizeof(struct Stroke));
-  if (stroke == NULL) return NULL; // alloc failed case
+  struct Stroke *stroke = (struct Stroke *)malloc(sizeof(struct Stroke));
+  if (stroke == NULL)
+    return NULL; // alloc failed case
 
   stroke->pointCount = pointCount;
 
   if (pointCount > 0)
   {
-    stroke->points = (struct Point*)malloc(sizeof(struct Point) * pointCount);
-    if (stroke->points == NULL) { free(stroke); return NULL; } // alloc failed case
+    stroke->points = (struct Point *)malloc(sizeof(struct Point) * pointCount);
+    if (stroke->points == NULL)
+    {
+      free(stroke);
+      return NULL;
+    }                                                             // alloc failed case
     memset(stroke->points, 0, sizeof(struct Point) * pointCount); // init mem to zero
-  } 
-  else {
+  }
+  else
+  {
     stroke->points = NULL;
   }
 
@@ -1226,10 +1244,10 @@ struct Stroke *CreateStroke(int pointCount)
 // The parent structure gains references to the child's data.
 // potentially cause double-free issues or memory leaks to the original pointer.
 
-
-bool AddSegmentToDocument(struct Document *document, struct Segment *segment) 
+bool AddSegmentToDocument(struct Document *document, struct Segment *segment)
 {
-  if (document == NULL || segment == NULL) return false; // check for null pointers
+  if (document == NULL || segment == NULL)
+    return false; // check for null pointers
 
   // expand array for new segment (assume the count is always matched with the object in the array)
   int newCount = document->segmentCount + 1; // dont do ++ here dumbass
@@ -1237,40 +1255,45 @@ bool AddSegmentToDocument(struct Document *document, struct Segment *segment)
 
   if (document->segments == NULL) // no segments beforehand
   {
-    newSegments = (struct Segment*)malloc(sizeof(struct Segment) * newCount);
-    if (newSegments == NULL) return false; // alloc failed case
+    newSegments = (struct Segment *)malloc(sizeof(struct Segment) * newCount);
+    if (newSegments == NULL)
+      return false; // alloc failed case
   }
   else // segments already exist
-  { // BAD: realloc may need to copy the whole array (actually I dont care)
-    newSegments = (struct Segment*)realloc(document->segments, sizeof(struct Segment) * newCount);
-    if (newSegments == NULL) return false; // alloc failed case
+  {    // BAD: realloc may need to copy the whole array (actually I dont care)
+    newSegments = (struct Segment *)realloc(document->segments, sizeof(struct Segment) * newCount);
+    if (newSegments == NULL)
+      return false; // alloc failed case
   }
 
   document->segments = newSegments; // copy the new segments array
-  // copy the new segment into the array 
+  // copy the new segment into the array
   // BAD: this is a shallow copy, but as long as they work and free without error I dont care
   document->segments[document->segmentCount] = *segment;
-  document->segmentCount++; // increment the segment count 
+  document->segmentCount++; // increment the segment count
 
   return true;
 }
 
-bool AddCharacterToSegment(struct Segment *segment, struct Character *character) 
+bool AddCharacterToSegment(struct Segment *segment, struct Character *character)
 {
-  if (segment == NULL || character == NULL) return false; 
+  if (segment == NULL || character == NULL)
+    return false;
 
-  int newCount = segment->characterCount + 1; 
+  int newCount = segment->characterCount + 1;
   struct Character *newCharacters;
 
-  if (segment->characters == NULL) 
+  if (segment->characters == NULL)
   {
-    newCharacters = (struct Character*)malloc(sizeof(struct Character) * newCount);
-    if (newCharacters == NULL) return false;
+    newCharacters = (struct Character *)malloc(sizeof(struct Character) * newCount);
+    if (newCharacters == NULL)
+      return false;
   }
-  else 
+  else
   {
-    newCharacters = (struct Character*)realloc(segment->characters, sizeof(struct Character) * newCount);
-    if (newCharacters == NULL) return false;
+    newCharacters = (struct Character *)realloc(segment->characters, sizeof(struct Character) * newCount);
+    if (newCharacters == NULL)
+      return false;
   }
 
   segment->characters = newCharacters;
@@ -1280,22 +1303,25 @@ bool AddCharacterToSegment(struct Segment *segment, struct Character *character)
   return true;
 }
 
-bool AddStrokeToCharacter(struct Character *character, struct Stroke *stroke) 
+bool AddStrokeToCharacter(struct Character *character, struct Stroke *stroke)
 {
-  if (character == NULL || stroke == NULL) return false; 
+  if (character == NULL || stroke == NULL)
+    return false;
 
-  int newCount = character->strokeCount + 1; 
+  int newCount = character->strokeCount + 1;
   struct Stroke *newStrokes;
 
-  if (character->strokes == NULL) 
+  if (character->strokes == NULL)
   {
-    newStrokes = (struct Stroke*)malloc(sizeof(struct Stroke) * newCount);
-    if (newStrokes == NULL) return false;
+    newStrokes = (struct Stroke *)malloc(sizeof(struct Stroke) * newCount);
+    if (newStrokes == NULL)
+      return false;
   }
-  else 
+  else
   {
-    newStrokes = (struct Stroke*)realloc(character->strokes, sizeof(struct Stroke) * newCount);
-    if (newStrokes == NULL) return false;
+    newStrokes = (struct Stroke *)realloc(character->strokes, sizeof(struct Stroke) * newCount);
+    if (newStrokes == NULL)
+      return false;
   }
 
   character->strokes = newStrokes;
@@ -1305,22 +1331,25 @@ bool AddStrokeToCharacter(struct Character *character, struct Stroke *stroke)
   return true;
 }
 
-bool AddPointToStroke(struct Stroke *stroke, struct Point *point) 
+bool AddPointToStroke(struct Stroke *stroke, struct Point *point)
 {
-  if (stroke == NULL || point == NULL) return false; 
+  if (stroke == NULL || point == NULL)
+    return false;
 
-  int newCount = stroke->pointCount + 1; 
+  int newCount = stroke->pointCount + 1;
   struct Point *newPoints;
 
-  if (stroke->points == NULL) 
+  if (stroke->points == NULL)
   {
-    newPoints = (struct Point*)malloc(sizeof(struct Point) * newCount);
-    if (newPoints == NULL) return false; // alloc failed case
+    newPoints = (struct Point *)malloc(sizeof(struct Point) * newCount);
+    if (newPoints == NULL)
+      return false; // alloc failed case
   }
-  else 
+  else
   {
-    newPoints = (struct Point*)realloc(stroke->points, sizeof(struct Point) * newCount);
-    if (newPoints == NULL) return false; // alloc failed case
+    newPoints = (struct Point *)realloc(stroke->points, sizeof(struct Point) * newCount);
+    if (newPoints == NULL)
+      return false; // alloc failed case
   }
 
   stroke->points = newPoints;
