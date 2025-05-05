@@ -87,7 +87,7 @@ typedef struct Document
 
 #define DIR_CW GPIO_PIN_SET
 #define DIR_CCW GPIO_PIN_RESET
-// #define DIR_STOP  PLACEHOLD
+// #define DIR_STOP
 
 #define DFLT_STEP_T 1
 #define DFLT_STEP_FREQ 1000
@@ -123,11 +123,29 @@ static void MX_TIM2_Init(void);
 void penup();
 void pendown();
 void legacyMove(uint8_t direction, uint32_t time, uint8_t draw);
+
 void moveToXY(float delta_X, float delta_Y);
 void moveAngle(float distance, float angle);
 void moveToAbsoluteXY(int32_t target_X, int32_t target_Y);
 void motorControl(int32_t delta_MotorL, int32_t delta_MotorR);
 void updateGlobalXY(float delta_X, float delta_Y);
+
+void drawDocument(struct Document *document);
+void drawSegment(struct Segment *segment, float *Global_X, float *Global_Y, float page_width, float page_height, float top_margin, float bottom_margin, float left_margin, float right_margin, float scale);
+void drawCharacter(struct Character *character, float startX, float startY, float scale);
+void drawStroke(struct Stroke *stroke);
+
+void freeAllData(struct Document *document);
+void freeDocument(struct Document *document);
+void freeSegment(struct Segment *segment);
+void freeCharacter(struct Character *character);
+void freeStroke(struct Stroke *stroke);
+
+struct Document *CreateDocument(int segmentCount, float page_height, float top_margin, float bottom_margin,  float left_margin, float right_margin,  float page_width);
+struct Segment *CreateSegment(int characterCount, float ascender, float descender, float line_gap, float paragraph_spacing);
+struct Character *CreateCharacter(int strokeCount, float advance_width, float left_side_bearing, bool is_line_feed);
+struct Stroke *CreateStroke(int pointCount);
+
 void drawFu();
 void drawCircle();
 void drawRegularPentagon();
@@ -749,7 +767,7 @@ void legacyMove(uint8_t direction, uint32_t time, uint8_t draw)
 //
 // Quick search:
 // TODO; CAUTION; PROBLEM
-// WARNING
+// WARNING; BAD
 //
 
 //
@@ -923,7 +941,7 @@ void updateGlobalXY(float delta_X, float delta_Y)
 // having negative Y or not affects greatly on line changing.
 // where the origin is, to be defined
 
-void DrawDocument(struct Document *document)
+void drawDocument(struct Document *document)
 {
   // set the starting position at the top left corner of the page
   float Global_X = document->left_margin;
@@ -939,12 +957,16 @@ void DrawDocument(struct Document *document)
     if (segment->characterCount > 0)
     {
       // draw the segment at the current position
-      DrawSegment(segment, &Global_X, &Global_Y, document->page_width, document->page_height, document->top_margin, document->bottom_margin, document->left_margin, document->right_margin, scale);
+      drawSegment(segment, &Global_X, &Global_Y, document->page_width, document->page_height, document->top_margin, document->bottom_margin, document->left_margin, document->right_margin, scale);
     }
   }
 }
 
-void DrawSegment(struct Segment *segment, float *Global_X, float *Global_Y, float page_width, float page_height, float top_margin, float bottom_margin, float left_margin, float right_margin, float scale)
+void drawSegment(struct Segment *segment, float *Global_X, 
+                  float *Global_Y, float page_width, 
+                  float page_height, float top_margin, 
+                  float bottom_margin, float left_margin, 
+                  float right_margin, float scale)
 {
   float current_X = *Global_X;
   float current_Y = *Global_Y - segment->ascender;
@@ -1018,9 +1040,11 @@ void drawStroke(struct Stroke *stroke)
   penup();
 }
 
+
 //
-// data handling
+// data handling: free, create, add
 //
+
 // Free: Document -> Segment -> Character -> Stroke -> Points
 
 // free all data
@@ -1085,41 +1109,226 @@ void freeStroke(struct Stroke *stroke)
   }
 }
 
-//
-// data creation
-//
+// create:
+// empty strctures & empty array
+// CAUTION: Use add functions to add data in to them later
+// WARNING: ownership problems in add functions, not important in this project but do mind that
 
-// WARNING:
-// Document is not created in this function at this moment, the data from yaml and RPC is not yet implemented
-struct Document *CreateDocument(struct Document *document, float page_width, float page_height,
-                                float top_margin, float bottom_margin, float left_margin,
-                                float right_margin, int segmentCount)
+struct Document *CreateDocument(int segmentCount, float page_height,
+                                float top_margin, float bottom_margin, 
+                                float left_margin, float right_margin, 
+                                float page_width)
 {
-  // Document* document = (Document*)malloc(sizeof(Document));
-  document->page_width = page_width;
-  document->page_height = page_height;
-  document->top_margin = 10;
-  document->bottom_margin = 10;
-  document->left_margin = 10;
-  document->right_margin = 10;
-  document->segmentCount = 0;
-  document->segments = NULL;
+  struct Document *Doc = (struct Document*)malloc(sizeof(struct Document));
+  if (Doc == NULL) return NULL; // alloc failed case
+
+  
+  Doc->page_width = page_width;
+  Doc->page_height = page_height;
+  Doc->top_margin = top_margin;
+  Doc->bottom_margin = bottom_margin;
+  Doc->left_margin = left_margin;
+  Doc->right_margin = right_margin;
+  Doc->segmentCount = segmentCount;
+  // if content is given, 
+  // create the segments array with segmentCount, 
+  // then use AddSegmentToDocument() to later add segments
+  if (segmentCount > 0)
+  {
+    Doc->segments = (struct Segment*)malloc(sizeof(struct Segment) * segmentCount);
+    if (Doc->segments == NULL) { free(Doc); return NULL; } // alloc failed case
+    memset(Doc->segments, 0, sizeof(struct Segment) * segmentCount); // init mem to zero
+  } 
+  else {
+    Doc->segments = NULL;
+  }
+
+  return Doc;
 }
 
-// Segment* CreateSegment(Segment* segment, int characterCount, float ascender, float descender, float line_gap) {
+struct Segment *CreateSegment(int characterCount, float ascender, 
+                        float descender, float line_gap, 
+                        float paragraph_spacing) 
+{
+  struct Segment *seg = (struct Segment*)malloc(sizeof(struct Segment));
+  if (seg == NULL) return NULL; // alloc failed case
 
-//   return segment;
-// }
+  seg->ascender = ascender;
+  seg->descender = descender;
+  seg->line_gap = line_gap;
+  seg->paragraph_spacing = paragraph_spacing;
+  seg->characterCount = characterCount;
 
-// Character* CreateCharacter(Character* character, int strokeCount, float advance_width, float left_side_bearing, int is_line_feed) {
+  if (characterCount > 0)
+  {
+    seg->characters = (struct Character*)malloc(sizeof(struct Character) * characterCount);
+    if (seg->characters == NULL) { free(seg); return NULL; } // alloc failed case
+    memset(seg->characters, 0, sizeof(struct Character) * characterCount); // init mem to zero
+  } 
+  else {
+    seg->characters = NULL;
+  }
 
-//   return character;
-// }
+  return seg;
+}
 
-// Stroke* CreateStroke(Stroke* stroke, int pointCount) {
+struct Character *CreateCharacter(int strokeCount, float advance_width, 
+                            float left_side_bearing, bool is_line_feed)
+{
+  struct Character *chara = (struct Character*)malloc(sizeof(struct Character));
+  if (chara == NULL) return NULL; // alloc failed case
 
-//   return stroke;
-// }
+  chara->advance_width = advance_width;
+  chara->left_side_bearing = left_side_bearing;
+  chara->is_line_feed = is_line_feed;
+  chara->strokeCount = strokeCount;
+
+  if (strokeCount > 0)
+  {
+    chara->strokes = (struct Stroke*)malloc(sizeof(struct Stroke) * strokeCount);
+    if (chara->strokes == NULL) { free(chara); return NULL; } // alloc failed case
+    memset(chara->strokes, 0, sizeof(struct Stroke) * strokeCount); // init mem to zero
+  } 
+  else {
+    chara->strokes = NULL;
+  }
+
+  return chara;
+}
+
+struct Stroke *CreateStroke(int pointCount) 
+{
+  struct Stroke *stroke = (struct Stroke*)malloc(sizeof(struct Stroke));
+  if (stroke == NULL) return NULL; // alloc failed case
+
+  stroke->pointCount = pointCount;
+
+  if (pointCount > 0)
+  {
+    stroke->points = (struct Point*)malloc(sizeof(struct Point) * pointCount);
+    if (stroke->points == NULL) { free(stroke); return NULL; } // alloc failed case
+    memset(stroke->points, 0, sizeof(struct Point) * pointCount); // init mem to zero
+  } 
+  else {
+    stroke->points = NULL;
+  }
+
+  return stroke;
+}
+
+// add:
+// use these functions to add data in empty structures, or add new data
+// CAUTION: the is no chain adding atm, do them in main
+
+// WARNING: **CONSIDER REBOOT OVER FREE ATM**
+// Mem ownership:
+// - Add functions perform shallow copies. After calling:
+// The parent structure gains references to the child's data.
+// potentially cause double-free issues or memory leaks to the original pointer.
+
+
+bool AddSegmentToDocument(struct Document *document, struct Segment *segment) 
+{
+  if (document == NULL || segment == NULL) return false; // check for null pointers
+
+  // expand array for new segment (assume the count is always matched with the object in the array)
+  int newCount = document->segmentCount + 1; // dont do ++ here dumbass
+  struct Segment *newSegments;
+
+  if (document->segments == NULL) // no segments beforehand
+  {
+    newSegments = (struct Segment*)malloc(sizeof(struct Segment) * newCount);
+    if (newSegments == NULL) return false; // alloc failed case
+  }
+  else // segments already exist
+  { // BAD: realloc may need to copy the whole array (actually I dont care)
+    newSegments = (struct Segment*)realloc(document->segments, sizeof(struct Segment) * newCount);
+    if (newSegments == NULL) return false; // alloc failed case
+  }
+
+  document->segments = newSegments; // copy the new segments array
+  // copy the new segment into the array 
+  // BAD: this is a shallow copy, but as long as they work and free without error I dont care
+  document->segments[document->segmentCount] = *segment;
+  document->segmentCount++; // increment the segment count 
+
+  return true;
+}
+
+bool AddCharacterToSegment(struct Segment *segment, struct Character *character) 
+{
+  if (segment == NULL || character == NULL) return false; 
+
+  int newCount = segment->characterCount + 1; 
+  struct Character *newCharacters;
+
+  if (segment->characters == NULL) 
+  {
+    newCharacters = (struct Character*)malloc(sizeof(struct Character) * newCount);
+    if (newCharacters == NULL) return false;
+  }
+  else 
+  {
+    newCharacters = (struct Character*)realloc(segment->characters, sizeof(struct Character) * newCount);
+    if (newCharacters == NULL) return false;
+  }
+
+  segment->characters = newCharacters;
+  segment->characters[segment->characterCount] = *character;
+  segment->characterCount++;
+
+  return true;
+}
+
+bool AddStrokeToCharacter(struct Character *character, struct Stroke *stroke) 
+{
+  if (character == NULL || stroke == NULL) return false; 
+
+  int newCount = character->strokeCount + 1; 
+  struct Stroke *newStrokes;
+
+  if (character->strokes == NULL) 
+  {
+    newStrokes = (struct Stroke*)malloc(sizeof(struct Stroke) * newCount);
+    if (newStrokes == NULL) return false;
+  }
+  else 
+  {
+    newStrokes = (struct Stroke*)realloc(character->strokes, sizeof(struct Stroke) * newCount);
+    if (newStrokes == NULL) return false;
+  }
+
+  character->strokes = newStrokes;
+  character->strokes[character->strokeCount] = *stroke;
+  character->strokeCount++;
+
+  return true;
+}
+
+bool AddPointToStroke(struct Stroke *stroke, struct Point *point) 
+{
+  if (stroke == NULL || point == NULL) return false; 
+
+  int newCount = stroke->pointCount + 1; 
+  struct Point *newPoints;
+
+  if (stroke->points == NULL) 
+  {
+    newPoints = (struct Point*)malloc(sizeof(struct Point) * newCount);
+    if (newPoints == NULL) return false; // alloc failed case
+  }
+  else 
+  {
+    newPoints = (struct Point*)realloc(stroke->points, sizeof(struct Point) * newCount);
+    if (newPoints == NULL) return false; // alloc failed case
+  }
+
+  stroke->points = newPoints;
+  stroke->points[stroke->pointCount] = *point;
+  stroke->pointCount++;
+
+  return true;
+}
 
 /* USER CODE END 4 */
 
