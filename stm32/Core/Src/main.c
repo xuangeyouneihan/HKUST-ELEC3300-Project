@@ -62,7 +62,7 @@ struct Segment
   int characterCount;
 }; // Segment structure to represent a segment of text with its characters
 
-typedef struct Document
+struct Document
 {
   float page_width;
   float page_height;
@@ -159,9 +159,9 @@ void drawRegularPentagon();
 /* USER CODE END 0 */
 
 /**
- * @brief  The application entry point.
- * @retval int
- */
+  * @brief  The application entry point.
+  * @retval int
+  */
 int main(void)
 {
 
@@ -221,17 +221,17 @@ int main(void)
 }
 
 /**
- * @brief System Clock Configuration
- * @retval None
- */
+  * @brief System Clock Configuration
+  * @retval None
+  */
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
   /** Initializes the RCC Oscillators according to the specified parameters
-   * in the RCC_OscInitTypeDef structure.
-   */
+  * in the RCC_OscInitTypeDef structure.
+  */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
@@ -245,8 +245,9 @@ void SystemClock_Config(void)
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
-   */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
+  */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
@@ -259,10 +260,10 @@ void SystemClock_Config(void)
 }
 
 /**
- * @brief TIM1 Initialization Function
- * @param None
- * @retval None
- */
+  * @brief TIM1 Initialization Function
+  * @param None
+  * @retval None
+  */
 static void MX_TIM1_Init(void)
 {
 
@@ -330,13 +331,14 @@ static void MX_TIM1_Init(void)
 
   /* USER CODE END TIM1_Init 2 */
   HAL_TIM_MspPostInit(&htim1);
+
 }
 
 /**
- * @brief TIM2 Initialization Function
- * @param None
- * @retval None
- */
+  * @brief TIM2 Initialization Function
+  * @param None
+  * @retval None
+  */
 static void MX_TIM2_Init(void)
 {
 
@@ -352,7 +354,7 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 1 */
   htim2.Instance = TIM2;
-  htim2.Init.Prescaler = 999;
+  htim2.Init.Prescaler = 1999;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim2.Init.Period = 71;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -392,13 +394,14 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 2 */
   HAL_TIM_MspPostInit(&htim2);
+
 }
 
 /**
- * @brief GPIO Initialization Function
- * @param None
- * @retval None
- */
+  * @brief GPIO Initialization Function
+  * @param None
+  * @retval None
+  */
 static void MX_GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -412,7 +415,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10 | GPIO_PIN_12 | GPIO_PIN_9, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10|GPIO_PIN_12|GPIO_PIN_9, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET);
@@ -430,7 +433,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PB10 PB12 PB9 */
-  GPIO_InitStruct.Pin = GPIO_PIN_10 | GPIO_PIN_12 | GPIO_PIN_9;
+  GPIO_InitStruct.Pin = GPIO_PIN_10|GPIO_PIN_12|GPIO_PIN_9;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -603,19 +606,16 @@ void drawCircle()
 {
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET); // enable
 
-  for (int i = 0; i < 72; i++)
+  for (int i = 0; i < 180; i++)
   {
-    if (!(i % 12))
+    if (!(i % 30))
     {
-      uint32_t tick = HAL_GetTick();
-      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
-      while (HAL_GetTick() - tick < 5)
-      {
-        HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_11);
-        HAL_Delay(1);
-      }
+      HAL_GPIO_WritePin(GPIOB, MOTOR_Z_DIR, GPIO_PIN_SET);
+      HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+      HAL_Delay(5);
+      HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_1);
     }
-    moveAngle(25, i * 5);
+    moveAngle(5, i * 2);
   }
 
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET); // disable
@@ -625,16 +625,13 @@ void drawRegularPentagon()
 {
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET); // enable
 
-  uint32_t tick = HAL_GetTick();
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
-  while (HAL_GetTick() - tick < 5)
-  {
-    HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_11);
-    HAL_Delay(1);
-  }
   for (int i = 0; i < 5; i++)
   {
-    moveAngle(200, (float)i * 360 / 5);
+    HAL_GPIO_WritePin(GPIOB, MOTOR_Z_DIR, GPIO_PIN_SET);
+    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+    HAL_Delay(5);
+    HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_1);
+    moveAngle(160, (float)i * 360 / 5);
   }
 
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET); // disable
@@ -642,7 +639,7 @@ void drawRegularPentagon()
 
 void penup()
 {
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, MOTOR_Z_DIR, GPIO_PIN_RESET);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
   HAL_Delay(100);
   HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_1);
@@ -650,7 +647,7 @@ void penup()
 
 void pendown()
 {
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOB, MOTOR_Z_DIR, GPIO_PIN_SET);
   HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
   HAL_Delay(100);
   HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_1);
@@ -1362,9 +1359,9 @@ bool AddPointToStroke(struct Stroke *stroke, struct Point *point)
 /* USER CODE END 4 */
 
 /**
- * @brief  This function is executed in case of error occurrence.
- * @retval None
- */
+  * @brief  This function is executed in case of error occurrence.
+  * @retval None
+  */
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
@@ -1376,14 +1373,14 @@ void Error_Handler(void)
   /* USER CODE END Error_Handler_Debug */
 }
 
-#ifdef USE_FULL_ASSERT
+#ifdef  USE_FULL_ASSERT
 /**
- * @brief  Reports the name of the source file and the source line number
- *         where the assert_param error has occurred.
- * @param  file: pointer to the source file name
- * @param  line: assert_param error line source number
- * @retval None
- */
+  * @brief  Reports the name of the source file and the source line number
+  *         where the assert_param error has occurred.
+  * @param  file: pointer to the source file name
+  * @param  line: assert_param error line source number
+  * @retval None
+  */
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
