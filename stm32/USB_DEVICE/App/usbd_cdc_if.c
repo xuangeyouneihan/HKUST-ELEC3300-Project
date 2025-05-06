@@ -62,6 +62,10 @@
   */
 
 /* USER CODE BEGIN PRIVATE_DEFINES */
+
+// ANCHOR
+#define MAX_JSON_SIZE 4096
+
 /* USER CODE END PRIVATE_DEFINES */
 
 /**
@@ -94,6 +98,10 @@ uint8_t UserRxBufferFS[APP_RX_DATA_SIZE];
 uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
 
 /* USER CODE BEGIN PRIVATE_VARIABLES */
+
+// ANCHOR
+static uint8_t jsonBuffer[MAX_JSON_SIZE];
+static int32_t jsonBufferIndex = 0; // current position where to write the next data
 
 /* USER CODE END PRIVATE_VARIABLES */
 
@@ -256,10 +264,35 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
   * @param  Len: Number of data received (in bytes)
   * @retval Result of the operation: USBD_OK if all operations are OK else USBD_FAIL
   */
-static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
+static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len) 
 {
   /* USER CODE BEGIN 6 */
-  processRpcRequest(Buf, *Len);
+
+  // ANCHOR
+
+  // check if the buffer is full
+  if (jsonBufferIndex + *Len < MAX_JSON_SIZE) {
+    // not full, copy the data to the buffer
+    memcpy(jsonBuffer + jsonBufferIndex, Buf, *Len);
+    jsonBufferIndex += *Len;
+    // null-terminate the string
+    jsonBuffer[jsonBufferIndex] = 0;
+
+    // check if the message is complete
+    // CAUTION: 
+
+    if (jsonBufferIndex > 0 && )
+
+  }
+  else // buffer overflow, unlikely in our case honesly
+  {
+    //  error and thats it
+    jsonBufferIndex = 0;
+    const char *error = "{Buffer overflow}";
+    CDC_Transmit_FS((uint8_t*)error, strlen(error));
+  }
+  
+  // prepare for the next pakage
   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
   USBD_CDC_ReceivePacket(&hUsbDeviceFS);
   return (USBD_OK);
