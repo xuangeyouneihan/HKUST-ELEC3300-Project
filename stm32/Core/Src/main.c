@@ -156,9 +156,7 @@ struct Stroke *CreateStroke(int pointCount);
 void drawFu();
 void drawCircle();
 void drawRegularPentagon();
-struct Document *create_HiNiHao_document();
-void draw_HiNiHao();
-void draw_R();
+void drawOneStrokeFromDoc();
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -167,9 +165,9 @@ void draw_R();
 /* USER CODE END 0 */
 
 /**
-  * @brief  The application entry point.
-  * @retval int
-  */
+ * @brief  The application entry point.
+ * @retval int
+ */
 int main(void)
 {
 
@@ -200,13 +198,12 @@ int main(void)
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET); // enable
-  // moveToXY(100, 0);
-  // moveToXY(-100, 0);
-  // moveToXY(0, 100);
-  // moveToXY(0, -100);
-  // penup();
-  // pendown();
-  moveToXY(500, 0);
+  moveToXY(100, 0);
+  moveToXY(-100, 0);
+  moveToXY(0, 100);
+  moveToXY(0, -100);
+  penup();
+  pendown();
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET); // disable
   /* USER CODE END 2 */
 
@@ -217,13 +214,12 @@ int main(void)
     if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0))
     {
       // drawFu();
-      draw_R();
+      drawOneStrokeFromDoc();
     }
     if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13))
     {
-      // drawCircle();
-      // drawRegularPentagon();
-      draw_HiNiHao();
+      drawCircle();
+      drawRegularPentagon();
     }
     /* USER CODE END WHILE */
 
