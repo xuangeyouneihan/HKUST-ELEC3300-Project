@@ -157,6 +157,11 @@ void drawFu();
 void drawCircle();
 void drawRegularPentagon();
 void drawOneStrokeFromDoc();
+
+bool parseDocument(struct Document *document, cJSON *json);
+bool parseSegment(struct Segment *segment, cJSON *json);
+bool parseCharacter(struct Character *character, cJSON *json);
+void processRpcRequest(uint8_t *buffer, uint16_t length);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -1676,52 +1681,217 @@ void drawOneStrokeFromDoc()
 //   return doc;
 // }
 
-// 解析 JSON 并生成 Document 结构（这里只给出部分示例，其他层级数据解析请自行补充）
-struct Document *parseDocument(cJSON *json)
+// 解析 JSON
+bool parseDocument(struct Document *document, cJSON *json)
 {
-  // 获取页面参数
-  float page_width = (float)(cJSON_GetObjectItem(json, "page_width")->valuedouble);
-  float page_height = (float)(cJSON_GetObjectItem(json, "page_height")->valuedouble);
-  float top_margin = (float)(cJSON_GetObjectItem(json, "top_margin")->valuedouble);
-  float bottom_margin = (float)(cJSON_GetObjectItem(json, "bottom_margin")->valuedouble);
-  float left_margin = (float)(cJSON_GetObjectItem(json, "left_margin")->valuedouble);
-  float right_margin = (float)(cJSON_GetObjectItem(json, "right_margin")->valuedouble);
+  cJSON *raw_page_width = cJSON_GetObjectItem(json, "page_width");
+  if (raw_page_width == NULL || !cJSON_IsNumber(raw_page_width))
+  {
+    return false;
+  }
+  float page_width = (float)(raw_page_width->valuedouble);
+  cJSON *raw_page_height = cJSON_GetObjectItem(json, "page_height");
+  if (raw_page_height == NULL || !cJSON_IsNumber(raw_page_height))
+  {
+    return false;
+  }
+  float page_height = (float)(raw_page_height->valuedouble);
+  cJSON *raw_top_margin = cJSON_GetObjectItem(json, "top_margin");
+  if (raw_top_margin == NULL || !cJSON_IsNumber(raw_top_margin))
+  {
+    return false;
+  }
+  float top_margin = (float)(raw_top_margin->valuedouble);
+  cJSON *raw_bottom_margin = cJSON_GetObjectItem(json, "bottom_margin");
+  if (raw_bottom_margin == NULL || !cJSON_IsNumber(raw_bottom_margin))
+  {
+    return false;
+  }
+  float bottom_margin = (float)(raw_bottom_margin->valuedouble);
+  cJSON *raw_left_margin = cJSON_GetObjectItem(json, "left_margin");
+  if (raw_left_margin == NULL || !cJSON_IsNumber(raw_left_margin))
+  {
+    return false;
+  }
+  float left_margin = (float)(raw_left_margin->valuedouble);
+  cJSON *raw_right_margin = cJSON_GetObjectItem(json, "right_margin");
+  if (raw_right_margin == NULL || !cJSON_IsNumber(raw_right_margin))
+  {
+    return false;
+  }
+  float right_margin = (float)(raw_right_margin->valuedouble);
 
   // 获取 segments 数组
-  cJSON *segments = cJSON_GetObjectItem(json, "segments");
-  if (!cJSON_IsArray(segments))
-    return NULL;
+  cJSON *raw_segments = cJSON_GetObjectItem(json, "segments");
+  if (!cJSON_IsArray(raw_segments))
+    return false;
 
-  int segmentCount = cJSON_GetArraySize(segments);
+  int segmentCount = cJSON_GetArraySize(raw_segments);
   struct Segment *segments = (struct Segment *)malloc(sizeof(struct Segment) * segmentCount);
   for (int i = 0; i < segmentCount; i++)
   {
     // 获取每个 segment 对象
-    cJSON *seg_item = cJSON_GetArrayItem(segments, i);
+    cJSON *seg_item = cJSON_GetArrayItem(raw_segments, i);
     // 对该 segment 深拷贝（递归拷贝所有子项）
     cJSON *new_seg_json = cJSON_Duplicate(seg_item, 1);
     if (new_seg_json != NULL)
     {
       // new_seg_json 就是一个独立的新的 JSON 对象
       // 这里可以传给其它函数处理，比如：
-      parseSegment(&segments[i], new_seg_json);
-      // 使用后释放内存
-      cJSON_Delete(new_seg_json);
+      if (!parseSegment(&segments[i], new_seg_json))
+      {
+        return false;
+      }
     }
+    // 使用后释放内存
+    cJSON_Delete(new_seg_json);
   }
-  // 创建 Document 对象（后续在解析时需要为 segments 内容填充数据）
-  struct Document *document = (struct Document *)malloc(sizeof(struct Document));
+  // 初始化 Document 对象
   if (!initDocument(document, page_width, page_height, top_margin, bottom_margin, left_margin, right_margin, segments, segmentCount))
   {
-    return NULL;
+    return false;
   }
 
-  return document;
+  return true;
 }
 
-struct Segment *parseSegment()
+bool parseSegment(struct Segment *segment, cJSON *json)
 {
-  ;
+  cJSON *raw_ascender = cJSON_GetObjectItem(json, "ascender");
+  if (raw_ascender == NULL || !cJSON_IsNumber(raw_ascender))
+  {
+    return false;
+  }
+  float ascender = (float)(raw_ascender->valuedouble);
+  cJSON *raw_descender = cJSON_GetObjectItem(json, "descender");
+  if (raw_descender == NULL || !cJSON_IsNumber(raw_descender))
+  {
+    return false;
+  }
+  float descender = (float)(raw_descender->valuedouble);
+  cJSON *raw_line_gap = cJSON_GetObjectItem(json, "line_gap");
+  if (raw_line_gap == NULL || !cJSON_IsNumber(raw_line_gap))
+  {
+    return false;
+  }
+  float line_gap = (float)(raw_line_gap->valuedouble);
+  cJSON *raw_paragraph_spacing = cJSON_GetObjectItem(json, "paragraph_spacing");
+  if (raw_paragraph_spacing == NULL || !cJSON_IsNumber(raw_paragraph_spacing))
+  {
+    return false;
+  }
+  float paragraph_spacing = (float)(raw_paragraph_spacing->valuedouble);
+
+  // 获取 characters 数组
+  cJSON *raw_characters = cJSON_GetObjectItem(json, "characters");
+  if (!cJSON_IsArray(raw_characters))
+    return false;
+
+  int characterCount = cJSON_GetArraySize(raw_characters);
+  struct Character *characters = (struct Character *)malloc(sizeof(struct Character) * characterCount);
+  for (int i = 0; i < characterCount; i++)
+  {
+    // 获取每个 character 对象
+    cJSON *char_item = cJSON_GetArrayItem(raw_characters, i);
+    // 对该 character 深拷贝（递归拷贝所有子项）
+    cJSON *new_char_json = cJSON_Duplicate(char_item, 1);
+    if (new_char_json != NULL)
+    {
+      // new_char_json 就是一个独立的新的 JSON 对象
+      // 这里可以传给其它函数处理，比如：
+      if (!parseCharacter(&characters[i], new_char_json))
+      {
+        return false;
+      }
+    }
+    // 使用后释放内存
+    cJSON_Delete(new_char_json);
+  }
+  // 初始化 Segment 对象
+  if (!initSegment(segment, ascender, descender, line_gap, paragraph_spacing, characters, characterCount))
+  {
+    return false;
+  }
+
+  return true;
+}
+
+bool parseCharacter(struct Character *character, cJSON *json)
+{
+  cJSON *raw_is_line_feed = cJSON_GetObjectItem(json, "is_line_feed");
+  if (raw_is_line_feed == NULL || !cJSON_IsBool(raw_is_line_feed))
+  {
+    return false;
+  }
+  bool is_line_feed = (bool)(raw_is_line_feed->valueint);
+  cJSON *raw_advance_width = cJSON_GetObjectItem(json, "advance_width");
+  if (raw_advance_width == NULL || !cJSON_IsNumber(raw_advance_width))
+  {
+    return false;
+  }
+  float advance_width = (float)(raw_advance_width->valuedouble);
+  cJSON *raw_left_side_bearing = cJSON_GetObjectItem(json, "left_side_bearing");
+  if (raw_left_side_bearing == NULL || !cJSON_IsNumber(raw_left_side_bearing))
+  {
+    return false;
+  }
+  float left_side_bearing = (float)(raw_left_side_bearing->valuedouble);
+
+  // 获取 strokes 数组
+  cJSON *raw_strokes = cJSON_GetObjectItem(json, "strokes");
+  if (!cJSON_IsArray(raw_strokes))
+    return false;
+
+  int strokeCount = cJSON_GetArraySize(raw_strokes);
+  struct Stroke *strokes = (struct Stroke *)malloc(sizeof(struct Stroke) * strokeCount);
+  for (int i = 0; i < strokeCount; i++)
+  {
+    // 获取每个 stroke 对象
+    cJSON *stroke_item = cJSON_GetArrayItem(raw_strokes, i);
+    // 对该 stroke 深拷贝（递归拷贝所有子项）
+    cJSON *new_stroke_json = cJSON_Duplicate(stroke_item, 1);
+    if (!cJSON_IsArray(new_stroke_json))
+    {
+      cJSON_free(new_stroke_json);
+      return false;
+    }
+    strokes[i].pointCount = cJSON_GetArraySize(new_stroke_json);
+    strokes[i].points = (struct Point *)malloc(sizeof(struct Point) * strokes[i].pointCount);
+    for (int j = 0; j < strokes[i].pointCount; j++)
+    {
+      cJSON *point_item = cJSON_GetArrayItem(new_stroke_json, j);
+      cJSON *new_point_json = cJSON_Duplicate(point_item, 1);
+      if (!cJSON_IsArray(new_point_json))
+      {
+        cJSON_free(new_point_json);
+        return false;
+      }
+      cJSON *raw_x = cJSON_GetArrayItem(new_point_json, 0);
+      if (!cJSON_IsNumber(raw_x))
+      {
+        cJSON_free(new_point_json);
+        return false;
+      }
+      strokes[i].points[j].x = (float)(raw_x->valuedouble);
+      cJSON *raw_y = cJSON_GetArrayItem(new_point_json, 1);
+      if (!cJSON_IsNumber(raw_y))
+      {
+        cJSON_free(new_point_json);
+        return false;
+      }
+      strokes[i].points[j].y = (float)(raw_y->valuedouble);
+      cJSON_free(new_point_json);
+    }
+    // 使用后释放内存
+    cJSON_Delete(new_stroke_json);
+  }
+  // 初始化 Character 对象
+  if (!initCharacter(character, is_line_feed, advance_width, left_side_bearing, strokes, strokeCount))
+  {
+    return false;
+  }
+
+  return true;
 }
 
 // RPC 处理函数，解析收到的 JSON 数据并绘制文档
@@ -1740,8 +1910,15 @@ void processRpcRequest(uint8_t *buffer, uint16_t length)
   }
 
   // 解析 Document 结构（包括页面参数、segments、characters、strokes 等）
-  struct Document *doc = parseDocument(root);
-  if (doc == NULL)
+  struct Document *document = (struct Document *)malloc(sizeof(struct Document));
+  if (document == NULL)
+  {
+    const char *error_response = "{\"error\":\"解析Document失败\"}";
+    CDC_Transmit_FS((uint8_t *)error_response, strlen(error_response));
+    cJSON_Delete(root);
+    return;
+  }
+  if (!parseDocument(document, root))
   {
     const char *error_response = "{\"error\":\"解析Document失败\"}";
     CDC_Transmit_FS((uint8_t *)error_response, strlen(error_response));
@@ -1750,10 +1927,10 @@ void processRpcRequest(uint8_t *buffer, uint16_t length)
   }
 
   // 调用绘制函数，开始绘制文档（你的 drawDocument() 已定义）
-  drawDocument(doc);
+  drawDocument(document);
 
   // 绘制完成后释放内存（注意本示例中可能需要在实际工程中完善内存管理）
-  freeAllData(doc);
+  freeAllData(document);
 
   const char *success_response = "{\"result\":\"绘制完成\"}";
   CDC_Transmit_FS((uint8_t *)success_response, strlen(success_response));
