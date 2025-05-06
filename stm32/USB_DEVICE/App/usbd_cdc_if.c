@@ -270,18 +270,56 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 
   // ANCHOR
 
+
+  // to check if the message is complete
+  // we need to keep track of the depth of the braces
+  // outermost braces are the first and last ones
+  static int braceCount = 0;
+  static bool jsonStarted = false;
+
+
   // check if the buffer is full
-  if (jsonBufferIndex + *Len < MAX_JSON_SIZE) {
-    // not full, copy the data to the buffer
+  if (jsonBufferIndex + *Len < MAX_JSON_SIZE) 
+  {
+    // not full, copy the Bef data to the current buffer position
     memcpy(jsonBuffer + jsonBufferIndex, Buf, *Len);
     jsonBufferIndex += *Len;
-    // null-terminate the string
-    jsonBuffer[jsonBufferIndex] = 0;
+
 
     // check if the message is complete
-    // CAUTION: 
 
-    if (jsonBufferIndex > 0 && )
+    // first, check if there is anything in this chunk
+    if (jsonBufferIndex > 0) {
+      //scan the newly recieved data chunk
+      for (int i = jsonBufferIndex - *Len; i < jsonBufferIndex; i++) {
+        char checkChar = jsonBuffer[i];
+
+        // check if this is the beginning (this is the first chunk)
+        if (!jsonStarted && checkChar == '{') {
+          jsonStarted = true;
+          braceCount = 1; // the outermost brace
+        }
+
+        // not at the beginning, count braces
+        if (jsonStarted && c == '{') {
+          braceCount++;
+        }
+        else if (jsonStarted && c == '}') {
+          braceCount--;
+        }
+        
+        // check the count of braces (if the message is complete)
+        if (braceCount == 0) {
+          // process the msg, with the length of the whole buffer
+          processRpcRequest(jsonBuffer, jsonBufferIndex);
+
+          // reset the buffer index and the brace count
+          jsonBufferIndex = 0;
+          jsonStarted = false;
+          braceCount = 0;
+        }
+      }
+    }
 
   }
   else // buffer overflow, unlikely in our case honesly
@@ -292,7 +330,7 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
     CDC_Transmit_FS((uint8_t*)error, strlen(error));
   }
   
-  // prepare for the next pakage
+  // prepare for the next chunk
   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
   USBD_CDC_ReceivePacket(&hUsbDeviceFS);
   return (USBD_OK);
