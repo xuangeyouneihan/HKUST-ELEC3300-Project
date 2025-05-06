@@ -193,12 +193,13 @@ int main(void)
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET); // enable
-  moveToXY(100, 0);
-  moveToXY(-100, 0);
-  moveToXY(0, 100);
-  moveToXY(0, -100);
-  penup();
-  pendown();
+  // moveToXY(100, 0);
+  // moveToXY(-100, 0);
+  // moveToXY(0, 100);
+  // moveToXY(0, -100);
+  // penup();
+  // pendown();
+  moveToXY(500, 0);
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET); // disable
   /* USER CODE END 2 */
 
@@ -977,7 +978,7 @@ void drawDocument(struct Document *document)
   // set the starting position at the top left corner of the page
   float Global_X = document->left_margin;
   float Global_Y = -(document->top_margin);
-  float scale = 1; // TODO: find the relationship between mm and moving time
+  float scale = 0.2; // 1 step = 0.2 mm
 
   // iterate through each segment in the document
   for (int i = 0; i < document->segmentCount; i++)
