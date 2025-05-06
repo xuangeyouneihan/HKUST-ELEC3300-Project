@@ -23,6 +23,8 @@
 /* USER CODE BEGIN Includes */
 #include <math.h>
 #include <stdbool.h>
+#include <stdlib.h>
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -159,9 +161,9 @@ void drawRegularPentagon();
 /* USER CODE END 0 */
 
 /**
-  * @brief  The application entry point.
-  * @retval int
-  */
+ * @brief  The application entry point.
+ * @retval int
+ */
 int main(void)
 {
 
@@ -221,17 +223,17 @@ int main(void)
 }
 
 /**
-  * @brief System Clock Configuration
-  * @retval None
-  */
+ * @brief System Clock Configuration
+ * @retval None
+ */
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
   /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
+   * in the RCC_OscInitTypeDef structure.
+   */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
@@ -245,9 +247,8 @@ void SystemClock_Config(void)
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+   */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
@@ -260,10 +261,10 @@ void SystemClock_Config(void)
 }
 
 /**
-  * @brief TIM1 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief TIM1 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_TIM1_Init(void)
 {
 
@@ -331,14 +332,13 @@ static void MX_TIM1_Init(void)
 
   /* USER CODE END TIM1_Init 2 */
   HAL_TIM_MspPostInit(&htim1);
-
 }
 
 /**
-  * @brief TIM2 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief TIM2 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_TIM2_Init(void)
 {
 
@@ -394,14 +394,13 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 2 */
   HAL_TIM_MspPostInit(&htim2);
-
 }
 
 /**
-  * @brief GPIO Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief GPIO Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -415,7 +414,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10|GPIO_PIN_12|GPIO_PIN_9, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10 | GPIO_PIN_12 | GPIO_PIN_9, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET);
@@ -433,7 +432,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PB10 PB12 PB9 */
-  GPIO_InitStruct.Pin = GPIO_PIN_10|GPIO_PIN_12|GPIO_PIN_9;
+  GPIO_InitStruct.Pin = GPIO_PIN_10 | GPIO_PIN_12 | GPIO_PIN_9;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -461,143 +460,182 @@ void drawFu()
 {
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET); // enable
 
-  legacyMove(3, 3000, 1);
-  HAL_Delay(1000);
-  legacyMove(5, 3000, 1);
-  HAL_Delay(1000);
-  legacyMove(7, 3000, 1);
-  HAL_Delay(1000);
-  legacyMove(1, 3000, 1);
-  HAL_Delay(1000);
+  // legacyMove(3, 3000, 1);
+  moveAngle(300, 315);
+  HAL_Delay(50);
+  // legacyMove(5, 3000, 1);
+  moveAngle(300, 225);
+  HAL_Delay(50);
+  // legacyMove(7, 3000, 1);
+  moveAngle(300, 135);
+  HAL_Delay(50);
+  // legacyMove(1, 3000, 1);
+  moveAngle(300, 45);
+  HAL_Delay(50);
 
   penup();
-  HAL_Delay(1000);
-  legacyMove(4, 871, 0);
-  HAL_Delay(1000);
-  legacyMove(6, 400, 0);
-  HAL_Delay(1000);
+  HAL_Delay(50);
+  // legacyMove(4, 871, 0);
+  moveAngle(174, 270);
+  HAL_Delay(50);
+  // legacyMove(6, 400, 0);
+  moveAngle(80, 180);
+  HAL_Delay(50);
 
   pendown();
-  HAL_Delay(1000);
-  legacyMove(2, 300, 1);
-  HAL_Delay(1000);
+  HAL_Delay(50);
+  // legacyMove(2, 300, 1);
+  moveAngle(60, 0);
+  HAL_Delay(50);
 
   penup();
-  HAL_Delay(1000);
-  legacyMove(4, 200, 0);
-  HAL_Delay(1000);
-  legacyMove(6, 450, 0);
-  HAL_Delay(1000);
+  HAL_Delay(50);
+  // legacyMove(4, 200, 0);
+  moveAngle(40, 270);
+  HAL_Delay(50);
+  // legacyMove(6, 450, 0);
+  moveAngle(90, 180);
+  HAL_Delay(50);
 
   pendown();
-  HAL_Delay(1000);
-  legacyMove(2, 500, 1);
-  HAL_Delay(1000);
+  HAL_Delay(50);
+  // legacyMove(2, 500, 1);
+  moveAngle(100, 0);
+  HAL_Delay(50);
 
   penup();
-  HAL_Delay(1000);
-  legacyMove(6, 200, 0);
-  HAL_Delay(1000);
+  HAL_Delay(50);
+  // legacyMove(6, 200, 0);
+  moveAngle(40, 180);
+  HAL_Delay(50);
 
   pendown();
-  HAL_Delay(1000);
-  legacyMove(4, 900, 1);
-  HAL_Delay(1000);
+  HAL_Delay(50);
+  // legacyMove(4, 900, 1);
+  moveAngle(180, 270);
+  HAL_Delay(50);
 
   penup();
-  HAL_Delay(1000);
-  legacyMove(0, 650, 0);
-  HAL_Delay(1000);
-  legacyMove(6, 150, 0);
-  HAL_Delay(1000);
+  HAL_Delay(50);
+  // legacyMove(0, 650, 0);
+  moveAngle(130, 90);
+  HAL_Delay(50);
+  // legacyMove(6, 150, 0);
+  moveAngle(50, 180);
+  HAL_Delay(50);
 
   pendown();
-  HAL_Delay(1000);
-  legacyMove(4, 350, 1);
-  HAL_Delay(1000);
+  HAL_Delay(50);
+  // legacyMove(4, 350, 1);
+  moveAngle(70, 270);
+  HAL_Delay(50);
 
   penup();
-  HAL_Delay(1000);
-  legacyMove(0, 350, 0);
-  HAL_Delay(1000);
-  legacyMove(2, 300, 0);
-  HAL_Delay(1000);
+  HAL_Delay(50);
+  // legacyMove(0, 350, 0);
+  moveAngle(70, 90);
+  HAL_Delay(50);
+  // legacyMove(2, 300, 0);
+  moveAngle(60, 0);
+  HAL_Delay(50);
 
   pendown();
-  HAL_Delay(1000);
-  legacyMove(4, 350, 1);
-  HAL_Delay(1000);
+  HAL_Delay(50);
+  // legacyMove(4, 350, 1);
+  moveAngle(70, 270);
+  HAL_Delay(50);
 
   penup();
-  HAL_Delay(1000);
-  legacyMove(2, 200, 0);
-  HAL_Delay(1000);
-  legacyMove(0, 825, 0);
-  HAL_Delay(1000);
+  HAL_Delay(50);
+  // legacyMove(2, 200, 0);
+  moveAngle(40, 0);
+  HAL_Delay(50);
+  // legacyMove(0, 825, 0);
+  moveAngle(165, 90);
+  HAL_Delay(50);
 
   pendown();
-  HAL_Delay(1000);
-  legacyMove(2, 400, 1);
-  HAL_Delay(1000);
+  HAL_Delay(50);
+  // legacyMove(2, 400, 1);
+  moveAngle(80, 0);
+  HAL_Delay(50);
 
   penup();
-  HAL_Delay(1000);
-  legacyMove(6, 50, 0);
-  HAL_Delay(1000);
-  legacyMove(4, 150, 0);
-  HAL_Delay(1000);
+  HAL_Delay(50);
+  // legacyMove(6, 50, 0);
+  moveAngle(10, 180);
+  HAL_Delay(50);
+  // legacyMove(4, 150, 0);
+  moveAngle(30, 270);
+  HAL_Delay(50);
 
   pendown();
-  HAL_Delay(1000);
-  legacyMove(4, 200, 1);
-  HAL_Delay(1000);
-  legacyMove(6, 300, 1);
-  HAL_Delay(1000);
-  legacyMove(0, 200, 1);
-  HAL_Delay(1000);
-  legacyMove(2, 300, 1);
-  HAL_Delay(1000);
+  HAL_Delay(50);
+  // legacyMove(4, 200, 1);
+  moveAngle(40, 270);
+  HAL_Delay(50);
+  // legacyMove(6, 300, 1);
+  moveAngle(60, 180);
+  HAL_Delay(50);
+  // legacyMove(0, 200, 1);
+  moveAngle(40, 90);
+  HAL_Delay(50);
+  // legacyMove(2, 300, 1);
+  moveAngle(60, 0);
+  HAL_Delay(50);
 
   penup();
-  HAL_Delay(1000);
-  legacyMove(4, 350, 0);
-  HAL_Delay(1000);
-  legacyMove(2, 100, 0);
-  HAL_Delay(1000);
+  HAL_Delay(50);
+  // legacyMove(4, 350, 0);
+  moveAngle(70, 270);
+  HAL_Delay(50);
+  // legacyMove(2, 100, 0);
+  moveAngle(20, 0);
+  HAL_Delay(150);
 
   pendown();
-  HAL_Delay(1000);
-  legacyMove(4, 500, 1);
-  HAL_Delay(1000);
-  legacyMove(6, 500, 1);
-  HAL_Delay(1000);
-  legacyMove(0, 500, 1);
-  HAL_Delay(1000);
-  legacyMove(2, 500, 1);
-  HAL_Delay(1000);
+  HAL_Delay(50);
+  // legacyMove(4, 500, 1);
+  moveAngle(100, 270);
+  HAL_Delay(50);
+  // legacyMove(6, 500, 1);
+  moveAngle(100, 180);
+  HAL_Delay(50);
+  // legacyMove(0, 500, 1);
+  moveAngle(100, 90);
+  HAL_Delay(50);
+  // legacyMove(2, 500, 1);
+  moveAngle(100, 0);
+  HAL_Delay(50);
 
   penup();
-  HAL_Delay(1000);
-  legacyMove(6, 500, 0);
-  HAL_Delay(1000);
-  legacyMove(4, 225, 0);
-  HAL_Delay(1000);
+  HAL_Delay(50);
+  // legacyMove(6, 500, 0);
+  moveAngle(100, 180);
+  HAL_Delay(50);
+  // legacyMove(4, 225, 0);
+  moveAngle(45, 270);
+  HAL_Delay(50);
 
   pendown();
-  HAL_Delay(1000);
-  legacyMove(2, 500, 1);
-  HAL_Delay(1000);
+  HAL_Delay(50);
+  // legacyMove(2, 500, 1);
+  moveAngle(100, 0);
+  HAL_Delay(50);
 
   penup();
-  HAL_Delay(1000);
-  legacyMove(0, 225, 0);
-  HAL_Delay(1000);
-  legacyMove(6, 225, 0);
-  HAL_Delay(1000);
+  HAL_Delay(50);
+  // legacyMove(0, 225, 0);
+  moveAngle(45, 90);
+  HAL_Delay(50);
+  // legacyMove(6, 225, 0);
+  moveAngle(45, 180);
+  HAL_Delay(50);
 
   pendown();
-  HAL_Delay(1000);
-  legacyMove(4, 500, 1);
+  HAL_Delay(50);
+  // legacyMove(4, 500, 1);
+  moveAngle(100, 270);
 
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET); // disable
 }
@@ -1132,7 +1170,7 @@ struct Document *CreateDocument(int segmentCount, float page_height,
     {
       free(Doc);
       return NULL;
-    }                                                                // alloc failed case
+    } // alloc failed case
     memset(Doc->segments, 0, sizeof(struct Segment) * segmentCount); // init mem to zero
   }
   else
@@ -1164,7 +1202,7 @@ struct Segment *CreateSegment(int characterCount, float ascender,
     {
       free(seg);
       return NULL;
-    }                                                                      // alloc failed case
+    } // alloc failed case
     memset(seg->characters, 0, sizeof(struct Character) * characterCount); // init mem to zero
   }
   else
@@ -1194,7 +1232,7 @@ struct Character *CreateCharacter(int strokeCount, float advance_width,
     {
       free(chara);
       return NULL;
-    }                                                               // alloc failed case
+    } // alloc failed case
     memset(chara->strokes, 0, sizeof(struct Stroke) * strokeCount); // init mem to zero
   }
   else
@@ -1220,7 +1258,7 @@ struct Stroke *CreateStroke(int pointCount)
     {
       free(stroke);
       return NULL;
-    }                                                             // alloc failed case
+    } // alloc failed case
     memset(stroke->points, 0, sizeof(struct Point) * pointCount); // init mem to zero
   }
   else
@@ -1359,9 +1397,9 @@ bool AddPointToStroke(struct Stroke *stroke, struct Point *point)
 /* USER CODE END 4 */
 
 /**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
+ * @brief  This function is executed in case of error occurrence.
+ * @retval None
+ */
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
@@ -1373,14 +1411,14 @@ void Error_Handler(void)
   /* USER CODE END Error_Handler_Debug */
 }
 
-#ifdef  USE_FULL_ASSERT
+#ifdef USE_FULL_ASSERT
 /**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
+ * @brief  Reports the name of the source file and the source line number
+ *         where the assert_param error has occurred.
+ * @param  file: pointer to the source file name
+ * @param  line: assert_param error line source number
+ * @retval None
+ */
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
