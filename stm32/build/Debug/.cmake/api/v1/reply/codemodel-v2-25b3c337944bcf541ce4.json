@@ -34,7 +34,8 @@
 					"source" : "cmake/stm32cubemx",
 					"targetIndexes" : 
 					[
-						1
+						1,
+						2
 					]
 				}
 			],
@@ -51,7 +52,8 @@
 					"targetIndexes" : 
 					[
 						0,
-						1
+						1,
+						2
 					]
 				}
 			],
@@ -60,15 +62,22 @@
 				{
 					"directoryIndex" : 0,
 					"id" : "HKUST-ELEC3300-Project::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-HKUST-ELEC3300-Project-Debug-da0b50e2790d8414f13f.json",
+					"jsonFile" : "target-HKUST-ELEC3300-Project-Debug-e9d189e87aa95b0b509b.json",
 					"name" : "HKUST-ELEC3300-Project",
 					"projectIndex" : 0
 				},
 				{
 					"directoryIndex" : 1,
 					"id" : "STM32_Drivers::@768a070a0fe75716b479",
-					"jsonFile" : "target-STM32_Drivers-Debug-96a22d6378974af72110.json",
+					"jsonFile" : "target-STM32_Drivers-Debug-629e0d124708787da686.json",
 					"name" : "STM32_Drivers",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 1,
+					"id" : "USB_Device_Library::@768a070a0fe75716b479",
+					"jsonFile" : "target-USB_Device_Library-Debug-0d9373d12d0881f84159.json",
+					"name" : "USB_Device_Library",
 					"projectIndex" : 0
 				}
 			]
