@@ -26,8 +26,8 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-
-
+#include "usbd_cdc_if.h"
+#include "cJSON.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -148,10 +148,10 @@ void freeSegment(struct Segment *segment);
 void freeCharacter(struct Character *character);
 void freeStroke(struct Stroke *stroke);
 
-struct Document *CreateDocument(int segmentCount, float page_height, float top_margin, float bottom_margin, float left_margin, float right_margin, float page_width);
-struct Segment *CreateSegment(int characterCount, float ascender, float descender, float line_gap, float paragraph_spacing);
-struct Character *CreateCharacter(int strokeCount, float advance_width, float left_side_bearing, bool is_line_feed);
-struct Stroke *CreateStroke(int pointCount);
+bool initDocument(struct Document *document, float page_width, float page_height, float top_margin, float bottom_margin, float left_margin, float right_margin, struct Segment *segments, int segmentCount);
+bool initSegment(struct Segment *segment, float ascender, float descender, float line_gap, float paragraph_spacing, struct Character *characters, int characterCount);
+bool initCharacter(struct Character *character, bool is_line_feed, float advance_width, float left_side_bearing, struct Stroke *strokes, int strokeCount);
+bool initStroke(struct Stroke *stroke, struct Point *points, int pointCount);
 
 void drawFu();
 void drawCircle();
@@ -229,9 +229,9 @@ int main(void)
 }
 
 /**
-  * @brief System Clock Configuration
-  * @retval None
-  */
+ * @brief System Clock Configuration
+ * @retval None
+ */
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
@@ -239,8 +239,8 @@ void SystemClock_Config(void)
   RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
   /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
+   * in the RCC_OscInitTypeDef structure.
+   */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
@@ -254,9 +254,8 @@ void SystemClock_Config(void)
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+   */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
@@ -275,10 +274,10 @@ void SystemClock_Config(void)
 }
 
 /**
-  * @brief TIM1 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief TIM1 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_TIM1_Init(void)
 {
 
@@ -346,14 +345,13 @@ static void MX_TIM1_Init(void)
 
   /* USER CODE END TIM1_Init 2 */
   HAL_TIM_MspPostInit(&htim1);
-
 }
 
 /**
-  * @brief TIM2 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief TIM2 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_TIM2_Init(void)
 {
 
@@ -409,14 +407,13 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 2 */
   HAL_TIM_MspPostInit(&htim2);
-
 }
 
 /**
-  * @brief GPIO Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief GPIO Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -430,7 +427,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10|GPIO_PIN_12|GPIO_PIN_9, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10 | GPIO_PIN_12 | GPIO_PIN_9, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET);
@@ -448,7 +445,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PB10 PB12 PB9 */
-  GPIO_InitStruct.Pin = GPIO_PIN_10|GPIO_PIN_12|GPIO_PIN_9;
+  GPIO_InitStruct.Pin = GPIO_PIN_10 | GPIO_PIN_12 | GPIO_PIN_9;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -1156,127 +1153,136 @@ void freeStroke(struct Stroke *stroke)
   }
 }
 
-// create:
-// empty strctures & empty array
-// CAUTION: Use add functions to add data in to them later
-// WARNING: ownership problems in add functions, not important in this project but do mind that
+// init the components:
 
-struct Document *CreateDocument(int segmentCount, float page_height,
-                                float top_margin, float bottom_margin,
-                                float left_margin, float right_margin,
-                                float page_width)
+bool initDocument(struct Document *document, float page_width,
+                  float page_height, float top_margin,
+                  float bottom_margin, float left_margin,
+                  float right_margin, struct Segment *segments,
+                  int segmentCount)
 {
-  struct Document *Doc = (struct Document *)malloc(sizeof(struct Document));
-  if (Doc == NULL)
-    return NULL; // alloc failed case
+  if (document == NULL)
+    return false;
 
-  Doc->page_width = page_width;
-  Doc->page_height = page_height;
-  Doc->top_margin = top_margin;
-  Doc->bottom_margin = bottom_margin;
-  Doc->left_margin = left_margin;
-  Doc->right_margin = right_margin;
-  Doc->segmentCount = segmentCount;
-  // if content is given,
+  document->page_width = page_width;
+  document->page_height = page_height;
+  document->top_margin = top_margin;
+  document->bottom_margin = bottom_margin;
+  document->left_margin = left_margin;
+  document->right_margin = right_margin;
+  document->segmentCount = segmentCount;
+  // if content is given and segments == NULL,
   // create the segments array with segmentCount,
   // then use AddSegmentToDocument() to later add segments
-  if (segmentCount > 0)
+  if (segmentCount > 0 && segments == NULL)
   {
-    Doc->segments = (struct Segment *)malloc(sizeof(struct Segment) * segmentCount);
-    if (Doc->segments == NULL)
+    document->segments = (struct Segment *)malloc(sizeof(struct Segment) * segmentCount);
+    if (document->segments == NULL)
     {
-      free(Doc);
-      return NULL;
+      return false;
     } // alloc failed case
-    memset(Doc->segments, 0, sizeof(struct Segment) * segmentCount); // init mem to zero
+    memset(document->segments, 0, sizeof(struct Segment) * segmentCount); // init mem to zero
+  }
+  else if (segmentCount > 0 && segments != NULL) // 直接将传入的segments当作segments数组
+  {
+    document->segments = segments;
   }
   else
   {
-    Doc->segments = NULL;
+    document->segments = NULL;
   }
 
-  return Doc;
+  return true;
 }
 
-struct Segment *CreateSegment(int characterCount, float ascender,
-                              float descender, float line_gap,
-                              float paragraph_spacing)
+bool initSegment(struct Segment *segment, float ascender,
+                 float descender, float line_gap,
+                 float paragraph_spacing, struct Character *characters,
+                 int characterCount)
 {
-  struct Segment *seg = (struct Segment *)malloc(sizeof(struct Segment));
-  if (seg == NULL)
-    return NULL; // alloc failed case
+  if (segment == NULL)
+    return false;
 
-  seg->ascender = ascender;
-  seg->descender = descender;
-  seg->line_gap = line_gap;
-  seg->paragraph_spacing = paragraph_spacing;
-  seg->characterCount = characterCount;
+  segment->ascender = ascender;
+  segment->descender = descender;
+  segment->line_gap = line_gap;
+  segment->paragraph_spacing = paragraph_spacing;
+  segment->characterCount = characterCount;
 
-  if (characterCount > 0)
+  if (characterCount > 0 && characters == NULL)
   {
-    seg->characters = (struct Character *)malloc(sizeof(struct Character) * characterCount);
-    if (seg->characters == NULL)
+    segment->characters = (struct Character *)malloc(sizeof(struct Character) * characterCount);
+    if (segment->characters == NULL)
     {
-      free(seg);
-      return NULL;
+      return false;
     } // alloc failed case
-    memset(seg->characters, 0, sizeof(struct Character) * characterCount); // init mem to zero
+    memset(segment->characters, 0, sizeof(struct Character) * characterCount); // init mem to zero
+  }
+  else if (characterCount > 0 && characters != NULL)
+  {
+    segment->characters = characters;
   }
   else
   {
-    seg->characters = NULL;
+    segment->characters = NULL;
   }
 
-  return seg;
+  return true;
 }
 
-struct Character *CreateCharacter(int strokeCount, float advance_width,
-                                  float left_side_bearing, bool is_line_feed)
+bool initCharacter(struct Character *character, bool is_line_feed,
+                   float advance_width, float left_side_bearing,
+                   struct Stroke *strokes, int strokeCount)
 {
-  struct Character *chara = (struct Character *)malloc(sizeof(struct Character));
-  if (chara == NULL)
-    return NULL; // alloc failed case
+  if (character == NULL)
+    return false;
 
-  chara->advance_width = advance_width;
-  chara->left_side_bearing = left_side_bearing;
-  chara->is_line_feed = is_line_feed;
-  chara->strokeCount = strokeCount;
+  character->advance_width = advance_width;
+  character->left_side_bearing = left_side_bearing;
+  character->is_line_feed = is_line_feed;
+  character->strokeCount = strokeCount;
 
-  if (strokeCount > 0)
+  if (strokeCount > 0 && strokes == NULL)
   {
-    chara->strokes = (struct Stroke *)malloc(sizeof(struct Stroke) * strokeCount);
-    if (chara->strokes == NULL)
+    character->strokes = (struct Stroke *)malloc(sizeof(struct Stroke) * strokeCount);
+    if (character->strokes == NULL)
     {
-      free(chara);
-      return NULL;
+      return false;
     } // alloc failed case
-    memset(chara->strokes, 0, sizeof(struct Stroke) * strokeCount); // init mem to zero
+    memset(character->strokes, 0, sizeof(struct Stroke) * strokeCount); // init mem to zero
+  }
+  else if (strokeCount > 0 && strokes != NULL)
+  {
+    character->strokes = strokes;
   }
   else
   {
-    chara->strokes = NULL;
+    character->strokes = NULL;
   }
 
-  return chara;
+  return true;
 }
 
-struct Stroke *CreateStroke(int pointCount)
+bool initStroke(struct Stroke * stroke, struct Point *points,
+                int pointCount)
 {
-  struct Stroke *stroke = (struct Stroke *)malloc(sizeof(struct Stroke));
   if (stroke == NULL)
-    return NULL; // alloc failed case
+    return NULL;
 
   stroke->pointCount = pointCount;
 
-  if (pointCount > 0)
+  if (pointCount > 0 && points == NULL)
   {
     stroke->points = (struct Point *)malloc(sizeof(struct Point) * pointCount);
     if (stroke->points == NULL)
     {
-      free(stroke);
       return NULL;
     } // alloc failed case
     memset(stroke->points, 0, sizeof(struct Point) * pointCount); // init mem to zero
+  }
+  else if (pointCount > 0 && points != NULL)
+  {
+    stroke->points = points;
   }
   else
   {
@@ -1411,7 +1417,6 @@ bool AddPointToStroke(struct Stroke *stroke, struct Point *point)
   return true;
 }
 
-
 //
 // writing template
 //
@@ -1425,17 +1430,17 @@ void drawOneStrokeFromDoc()
   struct Segment *seg = CreateSegment(1, 10.0f, 3.0f, 2.0f, 5.0f);
   struct Character *chara = CreateCharacter(1, 12.0f, 1.0f, false);
   struct Stroke *stroke = CreateStroke(2);
-  
+
   struct Point pointA1_1 = {0.0f, 0.0f};
   struct Point pointA1_2 = {10.0f, -10.0f};
-  
+
   AddPointToStroke(stroke, &pointA1_1);
   AddPointToStroke(stroke, &pointA1_2);
-  
+
   AddStrokeToCharacter(chara, stroke);
-  
+
   AddCharacterToSegment(seg, chara);
-  
+
   AddSegmentToDocument(doc, seg);
 
   drawDocument(doc);
@@ -1448,7 +1453,7 @@ void drawOneStrokeFromDoc()
 // void draw_R()
 // {
 //   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET); // enable
-  
+
 //    // Create a character R with 3 strokes (vertical stem, curve, diagonal leg)
 //    struct Character* charR = CreateCharacter(3, 12.0f, 1.0f, false);
 
@@ -1458,7 +1463,7 @@ void drawOneStrokeFromDoc()
 //   struct Point pointR1_2 = {0.0f, 100.0f};
 //   AddPointToStroke(strokeR1, &pointR1_1);
 //   AddPointToStroke(strokeR1, &pointR1_2);
-  
+
 //   // Top loop portion of R (simplified as arcs)
 //   struct Stroke* strokeR2 = CreateStroke(5);
 //   struct Point pointR2_1 = {0.0f, 100.0f};  // Start at top of stem
@@ -1471,19 +1476,19 @@ void drawOneStrokeFromDoc()
 //   AddPointToStroke(strokeR2, &pointR2_3);
 //   AddPointToStroke(strokeR2, &pointR2_4);
 //   AddPointToStroke(strokeR2, &pointR2_5);
-  
+
 //   // Diagonal leg
 //   struct Stroke* strokeR3 = CreateStroke(2);
 //   struct Point pointR3_1 = {0.0f, 60.0f};   // Start at middle of stem
 //   struct Point pointR3_2 = {60.0f, 0.0f};   // End at bottom right
 //   AddPointToStroke(strokeR3, &pointR3_1);
 //   AddPointToStroke(strokeR3, &pointR3_2);
-  
+
 //   // Add strokes to character
 //   AddStrokeToCharacter(charR, strokeR1);
 //   AddStrokeToCharacter(charR, strokeR2);
 //   AddStrokeToCharacter(charR, strokeR3);
-  
+
 //   // Draw the character at position (100, 100) with scale 5.0
 //   // Using a larger scale (5.0) than document's default (0.2) for better visibility
 //   drawCharacter(charR, 0f, 0f, 1f);
@@ -1492,7 +1497,6 @@ void drawOneStrokeFromDoc()
 
 //   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET); // disable motors
 // }
-
 
 // void draw_HiNiHao()
 // {
@@ -1506,18 +1510,16 @@ void drawOneStrokeFromDoc()
 //   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET); // disable motors
 // }
 
-
-// struct Document *create_HiNiHao_document() 
+// struct Document *create_HiNiHao_document()
 // {
 //   // WANRING: NO DATA IS FREED!!! REBOOT AFTER USE!!!
-
 
 //   // Create the document with page dimensions and margins
 //   struct Document* doc = CreateDocument(1, 297.0f, 20.0f, 20.0f, 20.0f, 20.0f, 210.0f); // A4 size in mm
 
 //   // Create a segment for the text with proper metrics
 //   struct Segment* segment = CreateSegment(4, 10.0f, 3.0f, 2.0f, 5.0f);
-  
+
 //   // -------------- Create "H" character --------------
 //   struct Character* charH = CreateCharacter(3, 12.0f, 1.0f, false);
 
@@ -1527,46 +1529,46 @@ void drawOneStrokeFromDoc()
 //   struct Point pointH1_2 = {0.0f, 10.0f};
 //   AddPointToStroke(strokeH1, &pointH1_1);
 //   AddPointToStroke(strokeH1, &pointH1_2);
-  
+
 //   // Middle horizontal stroke
 //   struct Stroke* strokeH2 = CreateStroke(2);
 //   struct Point pointH2_1 = {0.0f, 5.0f};
 //   struct Point pointH2_2 = {5.0f, 5.0f};
 //   AddPointToStroke(strokeH2, &pointH2_1);
 //   AddPointToStroke(strokeH2, &pointH2_2);
-  
+
 //   // Right vertical stroke
 //   struct Stroke* strokeH3 = CreateStroke(2);
 //   struct Point pointH3_1 = {5.0f, 0.0f};
 //   struct Point pointH3_2 = {5.0f, 10.0f};
 //   AddPointToStroke(strokeH3, &pointH3_1);
 //   AddPointToStroke(strokeH3, &pointH3_2);
-  
+
 //   AddStrokeToCharacter(charH, strokeH1);
 //   AddStrokeToCharacter(charH, strokeH2);
-//   AddStrokeToCharacter(charH, strokeH3); 
+//   AddStrokeToCharacter(charH, strokeH3);
 
 //   // -------------- Create "i" character --------------
 //   struct Character* charI = CreateCharacter(2, 5.0f, 1.0f, false);
-    
+
 //   // Vertical stroke
 //   struct Stroke* strokeI1 = CreateStroke(2);
 //   struct Point pointI1_1 = {0.0f, 0.0f};
 //   struct Point pointI1_2 = {0.0f, 7.0f};
 //   AddPointToStroke(strokeI1, &pointI1_1);
 //   AddPointToStroke(strokeI1, &pointI1_2);
-  
+
 //   // Dot
 //   struct Stroke* strokeI2 = CreateStroke(1);
 //   struct Point pointI2 = {0.0f, 9.0f};
 //   AddPointToStroke(strokeI2, &pointI2);
-  
+
 //   AddStrokeToCharacter(charI, strokeI1);
 //   AddStrokeToCharacter(charI, strokeI2);
-  
+
 //   // -------------- Create "你" character --------------
 //   struct Character* charNi = CreateCharacter(5, 15.0f, 1.0f, false);
-  
+
 //   // Left radical top
 //   struct Stroke* strokeNi1 = CreateStroke(3);
 //   struct Point pointNi1_1 = {0.0f, 10.0f};
@@ -1575,28 +1577,28 @@ void drawOneStrokeFromDoc()
 //   AddPointToStroke(strokeNi1, &pointNi1_1);
 //   AddPointToStroke(strokeNi1, &pointNi1_2);
 //   AddPointToStroke(strokeNi1, &pointNi1_3);
-  
+
 //   // Left radical vertical
 //   struct Stroke* strokeNi2 = CreateStroke(2);
 //   struct Point pointNi2_1 = {2.0f, 8.0f};
 //   struct Point pointNi2_2 = {2.0f, 0.0f};
 //   AddPointToStroke(strokeNi2, &pointNi2_1);
 //   AddPointToStroke(strokeNi2, &pointNi2_2);
-  
+
 //   // Right horizontal top
 //   struct Stroke* strokeNi3 = CreateStroke(2);
 //   struct Point pointNi3_1 = {4.0f, 9.0f};
 //   struct Point pointNi3_2 = {12.0f, 9.0f};
 //   AddPointToStroke(strokeNi3, &pointNi3_1);
 //   AddPointToStroke(strokeNi3, &pointNi3_2);
-  
+
 //   // Middle horizontal
 //   struct Stroke* strokeNi4 = CreateStroke(2);
 //   struct Point pointNi4_1 = {4.0f, 5.0f};
 //   struct Point pointNi4_2 = {12.0f, 5.0f};
 //   AddPointToStroke(strokeNi4, &pointNi4_1);
 //   AddPointToStroke(strokeNi4, &pointNi4_2);
-  
+
 //   // Bottom stroke
 //   struct Stroke* strokeNi5 = CreateStroke(3);
 //   struct Point pointNi5_1 = {4.0f, 0.0f};
@@ -1605,37 +1607,37 @@ void drawOneStrokeFromDoc()
 //   AddPointToStroke(strokeNi5, &pointNi5_1);
 //   AddPointToStroke(strokeNi5, &pointNi5_2);
 //   AddPointToStroke(strokeNi5, &pointNi5_3);
-  
+
 //   AddStrokeToCharacter(charNi, strokeNi1);
 //   AddStrokeToCharacter(charNi, strokeNi2);
 //   AddStrokeToCharacter(charNi, strokeNi3);
 //   AddStrokeToCharacter(charNi, strokeNi4);
 //   AddStrokeToCharacter(charNi, strokeNi5);
-  
+
 //   // -------------- Create "好" character --------------
 //   struct Character* charHao = CreateCharacter(5, 15.0f, 1.0f, false);
-  
+
 //   // Left radical top
 //   struct Stroke* strokeHao1 = CreateStroke(2);
 //   struct Point pointHao1_1 = {0.0f, 10.0f};
 //   struct Point pointHao1_2 = {4.0f, 10.0f};
 //   AddPointToStroke(strokeHao1, &pointHao1_1);
 //   AddPointToStroke(strokeHao1, &pointHao1_2);
-  
+
 //   // Left radical vertical
 //   struct Stroke* strokeHao2 = CreateStroke(2);
 //   struct Point pointHao2_1 = {2.0f, 10.0f};
 //   struct Point pointHao2_2 = {2.0f, 0.0f};
 //   AddPointToStroke(strokeHao2, &pointHao2_1);
 //   AddPointToStroke(strokeHao2, &pointHao2_2);
-  
+
 //   // Right horizontal top
 //   struct Stroke* strokeHao3 = CreateStroke(2);
 //   struct Point pointHao3_1 = {5.0f, 8.0f};
 //   struct Point pointHao3_2 = {12.0f, 8.0f};
 //   AddPointToStroke(strokeHao3, &pointHao3_1);
 //   AddPointToStroke(strokeHao3, &pointHao3_2);
-  
+
 //   // Right middle
 //   struct Stroke* strokeHao4 = CreateStroke(4);
 //   struct Point pointHao4_1 = {5.0f, 5.0f};
@@ -1646,26 +1648,26 @@ void drawOneStrokeFromDoc()
 //   AddPointToStroke(strokeHao4, &pointHao4_2);
 //   AddPointToStroke(strokeHao4, &pointHao4_3);
 //   AddPointToStroke(strokeHao4, &pointHao4_4);
-  
+
 //   // Right bottom
 //   struct Stroke* strokeHao5 = CreateStroke(2);
 //   struct Point pointHao5_1 = {5.0f, 0.0f};
 //   struct Point pointHao5_2 = {12.0f, 0.0f};
 //   AddPointToStroke(strokeHao5, &pointHao5_1);
 //   AddPointToStroke(strokeHao5, &pointHao5_2);
-  
+
 //   AddStrokeToCharacter(charHao, strokeHao1);
 //   AddStrokeToCharacter(charHao, strokeHao2);
 //   AddStrokeToCharacter(charHao, strokeHao3);
 //   AddStrokeToCharacter(charHao, strokeHao4);
 //   AddStrokeToCharacter(charHao, strokeHao5);
-  
+
 //   // Add all characters to the segment
 //   AddCharacterToSegment(segment, charH);
 //   AddCharacterToSegment(segment, charI);
 //   AddCharacterToSegment(segment, charNi);
 //   AddCharacterToSegment(segment, charHao);
-  
+
 //   // Add segment to document
 //   AddSegmentToDocument(doc, segment);
 
@@ -1674,13 +1676,95 @@ void drawOneStrokeFromDoc()
 //   return doc;
 // }
 
+// 解析 JSON 并生成 Document 结构（这里只给出部分示例，其他层级数据解析请自行补充）
+struct Document *parseDocument(cJSON *json)
+{
+  // 获取页面参数
+  float page_width = (float)(cJSON_GetObjectItem(json, "page_width")->valuedouble);
+  float page_height = (float)(cJSON_GetObjectItem(json, "page_height")->valuedouble);
+  float top_margin = (float)(cJSON_GetObjectItem(json, "top_margin")->valuedouble);
+  float bottom_margin = (float)(cJSON_GetObjectItem(json, "bottom_margin")->valuedouble);
+  float left_margin = (float)(cJSON_GetObjectItem(json, "left_margin")->valuedouble);
+  float right_margin = (float)(cJSON_GetObjectItem(json, "right_margin")->valuedouble);
 
+  // 获取 segments 数组
+  cJSON *segments = cJSON_GetObjectItem(json, "segments");
+  if (!cJSON_IsArray(segments))
+    return NULL;
+
+  int segmentCount = cJSON_GetArraySize(segments);
+  struct Segment *segments = (struct Segment *)malloc(sizeof(struct Segment) * segmentCount);
+  for (int i = 0; i < segmentCount; i++)
+  {
+    // 获取每个 segment 对象
+    cJSON *seg_item = cJSON_GetArrayItem(segments, i);
+    // 对该 segment 深拷贝（递归拷贝所有子项）
+    cJSON *new_seg_json = cJSON_Duplicate(seg_item, 1);
+    if (new_seg_json != NULL)
+    {
+      // new_seg_json 就是一个独立的新的 JSON 对象
+      // 这里可以传给其它函数处理，比如：
+      parseSegment(&segments[i], new_seg_json);
+      // 使用后释放内存
+      cJSON_Delete(new_seg_json);
+    }
+  }
+  // 创建 Document 对象（后续在解析时需要为 segments 内容填充数据）
+  struct Document *document = (struct Document *)malloc(sizeof(struct Document));
+  if (!initDocument(document, page_width, page_height, top_margin, bottom_margin, left_margin, right_margin, segments, segmentCount))
+  {
+    return NULL;
+  }
+
+  return document;
+}
+
+struct Segment *parseSegment()
+{
+  ;
+}
+
+// RPC 处理函数，解析收到的 JSON 数据并绘制文档
+void processRpcRequest(uint8_t *buffer, uint16_t length)
+{
+  // 确保数据以 '\0' 结尾
+  char json_data[1024] = {0};
+  memcpy(json_data, buffer, (length < 1023) ? length : 1023);
+
+  cJSON *root = cJSON_Parse(json_data);
+  if (root == NULL)
+  {
+    const char *error_response = "{\"error\":\"JSON解析失败\"}";
+    CDC_Transmit_FS((uint8_t *)error_response, strlen(error_response));
+    return;
+  }
+
+  // 解析 Document 结构（包括页面参数、segments、characters、strokes 等）
+  struct Document *doc = parseDocument(root);
+  if (doc == NULL)
+  {
+    const char *error_response = "{\"error\":\"解析Document失败\"}";
+    CDC_Transmit_FS((uint8_t *)error_response, strlen(error_response));
+    cJSON_Delete(root);
+    return;
+  }
+
+  // 调用绘制函数，开始绘制文档（你的 drawDocument() 已定义）
+  drawDocument(doc);
+
+  // 绘制完成后释放内存（注意本示例中可能需要在实际工程中完善内存管理）
+  freeAllData(doc);
+
+  const char *success_response = "{\"result\":\"绘制完成\"}";
+  CDC_Transmit_FS((uint8_t *)success_response, strlen(success_response));
+  cJSON_Delete(root);
+}
 /* USER CODE END 4 */
 
 /**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
+ * @brief  This function is executed in case of error occurrence.
+ * @retval None
+ */
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
@@ -1692,14 +1776,14 @@ void Error_Handler(void)
   /* USER CODE END Error_Handler_Debug */
 }
 
-#ifdef  USE_FULL_ASSERT
+#ifdef USE_FULL_ASSERT
 /**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
+ * @brief  Reports the name of the source file and the source line number
+ *         where the assert_param error has occurred.
+ * @param  file: pointer to the source file name
+ * @param  line: assert_param error line source number
+ * @retval None
+ */
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
