@@ -25,6 +25,8 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -1401,234 +1403,262 @@ bool AddPointToStroke(struct Stroke *stroke, struct Point *point)
 //
 // WANRING: NO DATA IS FREED!!! REBOOT AFTER USE!!!
 
-void draw_R()
-{
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET); // enable
-  
-   // Create a character R with 3 strokes (vertical stem, curve, diagonal leg)
-   struct Character* charR = CreateCharacter(3, 12.0f, 1.0f, false);
-
-  // Vertical stem
-  struct Stroke* strokeR1 = CreateStroke(2);
-  struct Point pointR1_1 = {0.0f, 0.0f};
-  struct Point pointR1_2 = {0.0f, 10.0f};
-  AddPointToStroke(strokeR1, &pointR1_1);
-  AddPointToStroke(strokeR1, &pointR1_2);
-  
-  // Top loop portion of R (simplified as arcs)
-  struct Stroke* strokeR2 = CreateStroke(5);
-  struct Point pointR2_1 = {0.0f, 10.0f};  // Start at top of stem
-  struct Point pointR2_2 = {3.0f, 10.0f};  // Top right
-  struct Point pointR2_3 = {6.0f, 8.0f};   // Middle right
-  struct Point pointR2_4 = {3.0f, 6.0f};   // Bottom right
-  struct Point pointR2_5 = {0.0f, 6.0f};   // Connect back to stem
-  AddPointToStroke(strokeR2, &pointR2_1);
-  AddPointToStroke(strokeR2, &pointR2_2);
-  AddPointToStroke(strokeR2, &pointR2_3);
-  AddPointToStroke(strokeR2, &pointR2_4);
-  AddPointToStroke(strokeR2, &pointR2_5);
-  
-  // Diagonal leg
-  struct Stroke* strokeR3 = CreateStroke(2);
-  struct Point pointR3_1 = {0.0f, 6.0f};   // Start at middle of stem
-  struct Point pointR3_2 = {6.0f, 0.0f};   // End at bottom right
-  AddPointToStroke(strokeR3, &pointR3_1);
-  AddPointToStroke(strokeR3, &pointR3_2);
-  
-  // Add strokes to character
-  AddStrokeToCharacter(charR, strokeR1);
-  AddStrokeToCharacter(charR, strokeR2);
-  AddStrokeToCharacter(charR, strokeR3);
-  
-  // Draw the character at position (100, 100) with scale 5.0
-  // Using a larger scale (5.0) than document's default (0.2) for better visibility
-  drawCharacter(charR, 0f, 0f, 1f);
-
-  // WARNING: NO DATA IS FREED!!! REBOOT AFTER USE!!!
-
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET); // disable motors
-}
-
-
-void draw_HiNiHao()
+void drawOneStrokeFromDoc()
 {
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET); // enable
 
-  struct Document *doc = create_HiNiHao_document();
+  struct Document *doc = CreateDocument(1, 297.0f, 20.0f, 20.0f, 20.0f, 20.0f, 210.0f); // A4 size in mm
+  struct Segment *seg = CreateSegment(1, 10.0f, 3.0f, 2.0f, 5.0f);
+  struct Character *chara = CreateCharacter(1, 12.0f, 1.0f, false);
+  struct Stroke *stroke = CreateStroke(2);
+  
+  struct Point pointA1_1 = {0.0f, 0.0f};
+  struct Point pointA1_2 = {10.0f, -10.0f};
+  
+  AddPointToStroke(stroke, &pointA1_1);
+  AddPointToStroke(stroke, &pointA1_2);
+  
+  AddStrokeToCharacter(chara, stroke);
+  
+  AddCharacterToSegment(seg, chara);
+  
+  AddSegmentToDocument(doc, seg);
+
   drawDocument(doc);
 
   // WANRING: NO DATA IS FREED!!! REBOOT AFTER USE!!!
 
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET); // disable motors
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET); // disable
 }
 
-
-struct Document *create_HiNiHao_document() 
-{
-  // WANRING: NO DATA IS FREED!!! REBOOT AFTER USE!!!
-
-
-  // Create the document with page dimensions and margins
-  struct Document* doc = CreateDocument(1, 297.0f, 20.0f, 20.0f, 20.0f, 20.0f, 210.0f); // A4 size in mm
-
-  // Create a segment for the text with proper metrics
-  struct Segment* segment = CreateSegment(4, 10.0f, 3.0f, 2.0f, 5.0f);
+// void draw_R()
+// {
+//   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET); // enable
   
-  // -------------- Create "H" character --------------
-  struct Character* charH = CreateCharacter(3, 12.0f, 1.0f, false);
+//    // Create a character R with 3 strokes (vertical stem, curve, diagonal leg)
+//    struct Character* charR = CreateCharacter(3, 12.0f, 1.0f, false);
 
-  // Left vertical stroke
-  struct Stroke* strokeH1 = CreateStroke(2);
-  struct Point pointH1_1 = {0.0f, 0.0f};
-  struct Point pointH1_2 = {0.0f, 10.0f};
-  AddPointToStroke(strokeH1, &pointH1_1);
-  AddPointToStroke(strokeH1, &pointH1_2);
+//   // Vertical stem
+//   struct Stroke* strokeR1 = CreateStroke(2);
+//   struct Point pointR1_1 = {0.0f, 0.0f};
+//   struct Point pointR1_2 = {0.0f, 100.0f};
+//   AddPointToStroke(strokeR1, &pointR1_1);
+//   AddPointToStroke(strokeR1, &pointR1_2);
   
-  // Middle horizontal stroke
-  struct Stroke* strokeH2 = CreateStroke(2);
-  struct Point pointH2_1 = {0.0f, 5.0f};
-  struct Point pointH2_2 = {5.0f, 5.0f};
-  AddPointToStroke(strokeH2, &pointH2_1);
-  AddPointToStroke(strokeH2, &pointH2_2);
+//   // Top loop portion of R (simplified as arcs)
+//   struct Stroke* strokeR2 = CreateStroke(5);
+//   struct Point pointR2_1 = {0.0f, 100.0f};  // Start at top of stem
+//   struct Point pointR2_2 = {30.0f, 100.0f};  // Top right
+//   struct Point pointR2_3 = {60.0f, 80.0f};   // Middle right
+//   struct Point pointR2_4 = {30.0f, 60.0f};   // Bottom right
+//   struct Point pointR2_5 = {00.0f, 60.0f};   // Connect back to stem
+//   AddPointToStroke(strokeR2, &pointR2_1);
+//   AddPointToStroke(strokeR2, &pointR2_2);
+//   AddPointToStroke(strokeR2, &pointR2_3);
+//   AddPointToStroke(strokeR2, &pointR2_4);
+//   AddPointToStroke(strokeR2, &pointR2_5);
   
-  // Right vertical stroke
-  struct Stroke* strokeH3 = CreateStroke(2);
-  struct Point pointH3_1 = {5.0f, 0.0f};
-  struct Point pointH3_2 = {5.0f, 10.0f};
-  AddPointToStroke(strokeH3, &pointH3_1);
-  AddPointToStroke(strokeH3, &pointH3_2);
+//   // Diagonal leg
+//   struct Stroke* strokeR3 = CreateStroke(2);
+//   struct Point pointR3_1 = {0.0f, 60.0f};   // Start at middle of stem
+//   struct Point pointR3_2 = {60.0f, 0.0f};   // End at bottom right
+//   AddPointToStroke(strokeR3, &pointR3_1);
+//   AddPointToStroke(strokeR3, &pointR3_2);
   
-  AddStrokeToCharacter(charH, strokeH1);
-  AddStrokeToCharacter(charH, strokeH2);
-  AddStrokeToCharacter(charH, strokeH3); 
+//   // Add strokes to character
+//   AddStrokeToCharacter(charR, strokeR1);
+//   AddStrokeToCharacter(charR, strokeR2);
+//   AddStrokeToCharacter(charR, strokeR3);
+  
+//   // Draw the character at position (100, 100) with scale 5.0
+//   // Using a larger scale (5.0) than document's default (0.2) for better visibility
+//   drawCharacter(charR, 0f, 0f, 1f);
 
-  // -------------- Create "i" character --------------
-  struct Character* charI = CreateCharacter(2, 5.0f, 1.0f, false);
+//   // WARNING: NO DATA IS FREED!!! REBOOT AFTER USE!!!
+
+//   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET); // disable motors
+// }
+
+
+// void draw_HiNiHao()
+// {
+//   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET); // enable
+
+//   struct Document *doc = create_HiNiHao_document();
+//   drawDocument(doc);
+
+//   // WANRING: NO DATA IS FREED!!! REBOOT AFTER USE!!!
+
+//   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET); // disable motors
+// }
+
+
+// struct Document *create_HiNiHao_document() 
+// {
+//   // WANRING: NO DATA IS FREED!!! REBOOT AFTER USE!!!
+
+
+//   // Create the document with page dimensions and margins
+//   struct Document* doc = CreateDocument(1, 297.0f, 20.0f, 20.0f, 20.0f, 20.0f, 210.0f); // A4 size in mm
+
+//   // Create a segment for the text with proper metrics
+//   struct Segment* segment = CreateSegment(4, 10.0f, 3.0f, 2.0f, 5.0f);
+  
+//   // -------------- Create "H" character --------------
+//   struct Character* charH = CreateCharacter(3, 12.0f, 1.0f, false);
+
+//   // Left vertical stroke
+//   struct Stroke* strokeH1 = CreateStroke(2);
+//   struct Point pointH1_1 = {0.0f, 0.0f};
+//   struct Point pointH1_2 = {0.0f, 10.0f};
+//   AddPointToStroke(strokeH1, &pointH1_1);
+//   AddPointToStroke(strokeH1, &pointH1_2);
+  
+//   // Middle horizontal stroke
+//   struct Stroke* strokeH2 = CreateStroke(2);
+//   struct Point pointH2_1 = {0.0f, 5.0f};
+//   struct Point pointH2_2 = {5.0f, 5.0f};
+//   AddPointToStroke(strokeH2, &pointH2_1);
+//   AddPointToStroke(strokeH2, &pointH2_2);
+  
+//   // Right vertical stroke
+//   struct Stroke* strokeH3 = CreateStroke(2);
+//   struct Point pointH3_1 = {5.0f, 0.0f};
+//   struct Point pointH3_2 = {5.0f, 10.0f};
+//   AddPointToStroke(strokeH3, &pointH3_1);
+//   AddPointToStroke(strokeH3, &pointH3_2);
+  
+//   AddStrokeToCharacter(charH, strokeH1);
+//   AddStrokeToCharacter(charH, strokeH2);
+//   AddStrokeToCharacter(charH, strokeH3); 
+
+//   // -------------- Create "i" character --------------
+//   struct Character* charI = CreateCharacter(2, 5.0f, 1.0f, false);
     
-  // Vertical stroke
-  struct Stroke* strokeI1 = CreateStroke(2);
-  struct Point pointI1_1 = {0.0f, 0.0f};
-  struct Point pointI1_2 = {0.0f, 7.0f};
-  AddPointToStroke(strokeI1, &pointI1_1);
-  AddPointToStroke(strokeI1, &pointI1_2);
+//   // Vertical stroke
+//   struct Stroke* strokeI1 = CreateStroke(2);
+//   struct Point pointI1_1 = {0.0f, 0.0f};
+//   struct Point pointI1_2 = {0.0f, 7.0f};
+//   AddPointToStroke(strokeI1, &pointI1_1);
+//   AddPointToStroke(strokeI1, &pointI1_2);
   
-  // Dot
-  struct Stroke* strokeI2 = CreateStroke(1);
-  struct Point pointI2 = {0.0f, 9.0f};
-  AddPointToStroke(strokeI2, &pointI2);
+//   // Dot
+//   struct Stroke* strokeI2 = CreateStroke(1);
+//   struct Point pointI2 = {0.0f, 9.0f};
+//   AddPointToStroke(strokeI2, &pointI2);
   
-  AddStrokeToCharacter(charI, strokeI1);
-  AddStrokeToCharacter(charI, strokeI2);
+//   AddStrokeToCharacter(charI, strokeI1);
+//   AddStrokeToCharacter(charI, strokeI2);
   
-  // -------------- Create "你" character --------------
-  struct Character* charNi = CreateCharacter(5, 15.0f, 1.0f, false);
+//   // -------------- Create "你" character --------------
+//   struct Character* charNi = CreateCharacter(5, 15.0f, 1.0f, false);
   
-  // Left radical top
-  struct Stroke* strokeNi1 = CreateStroke(3);
-  struct Point pointNi1_1 = {0.0f, 10.0f};
-  struct Point pointNi1_2 = {2.0f, 8.0f};
-  struct Point pointNi1_3 = {4.0f, 10.0f};
-  AddPointToStroke(strokeNi1, &pointNi1_1);
-  AddPointToStroke(strokeNi1, &pointNi1_2);
-  AddPointToStroke(strokeNi1, &pointNi1_3);
+//   // Left radical top
+//   struct Stroke* strokeNi1 = CreateStroke(3);
+//   struct Point pointNi1_1 = {0.0f, 10.0f};
+//   struct Point pointNi1_2 = {2.0f, 8.0f};
+//   struct Point pointNi1_3 = {4.0f, 10.0f};
+//   AddPointToStroke(strokeNi1, &pointNi1_1);
+//   AddPointToStroke(strokeNi1, &pointNi1_2);
+//   AddPointToStroke(strokeNi1, &pointNi1_3);
   
-  // Left radical vertical
-  struct Stroke* strokeNi2 = CreateStroke(2);
-  struct Point pointNi2_1 = {2.0f, 8.0f};
-  struct Point pointNi2_2 = {2.0f, 0.0f};
-  AddPointToStroke(strokeNi2, &pointNi2_1);
-  AddPointToStroke(strokeNi2, &pointNi2_2);
+//   // Left radical vertical
+//   struct Stroke* strokeNi2 = CreateStroke(2);
+//   struct Point pointNi2_1 = {2.0f, 8.0f};
+//   struct Point pointNi2_2 = {2.0f, 0.0f};
+//   AddPointToStroke(strokeNi2, &pointNi2_1);
+//   AddPointToStroke(strokeNi2, &pointNi2_2);
   
-  // Right horizontal top
-  struct Stroke* strokeNi3 = CreateStroke(2);
-  struct Point pointNi3_1 = {4.0f, 9.0f};
-  struct Point pointNi3_2 = {12.0f, 9.0f};
-  AddPointToStroke(strokeNi3, &pointNi3_1);
-  AddPointToStroke(strokeNi3, &pointNi3_2);
+//   // Right horizontal top
+//   struct Stroke* strokeNi3 = CreateStroke(2);
+//   struct Point pointNi3_1 = {4.0f, 9.0f};
+//   struct Point pointNi3_2 = {12.0f, 9.0f};
+//   AddPointToStroke(strokeNi3, &pointNi3_1);
+//   AddPointToStroke(strokeNi3, &pointNi3_2);
   
-  // Middle horizontal
-  struct Stroke* strokeNi4 = CreateStroke(2);
-  struct Point pointNi4_1 = {4.0f, 5.0f};
-  struct Point pointNi4_2 = {12.0f, 5.0f};
-  AddPointToStroke(strokeNi4, &pointNi4_1);
-  AddPointToStroke(strokeNi4, &pointNi4_2);
+//   // Middle horizontal
+//   struct Stroke* strokeNi4 = CreateStroke(2);
+//   struct Point pointNi4_1 = {4.0f, 5.0f};
+//   struct Point pointNi4_2 = {12.0f, 5.0f};
+//   AddPointToStroke(strokeNi4, &pointNi4_1);
+//   AddPointToStroke(strokeNi4, &pointNi4_2);
   
-  // Bottom stroke
-  struct Stroke* strokeNi5 = CreateStroke(3);
-  struct Point pointNi5_1 = {4.0f, 0.0f};
-  struct Point pointNi5_2 = {8.0f, 3.0f};
-  struct Point pointNi5_3 = {12.0f, 0.0f};
-  AddPointToStroke(strokeNi5, &pointNi5_1);
-  AddPointToStroke(strokeNi5, &pointNi5_2);
-  AddPointToStroke(strokeNi5, &pointNi5_3);
+//   // Bottom stroke
+//   struct Stroke* strokeNi5 = CreateStroke(3);
+//   struct Point pointNi5_1 = {4.0f, 0.0f};
+//   struct Point pointNi5_2 = {8.0f, 3.0f};
+//   struct Point pointNi5_3 = {12.0f, 0.0f};
+//   AddPointToStroke(strokeNi5, &pointNi5_1);
+//   AddPointToStroke(strokeNi5, &pointNi5_2);
+//   AddPointToStroke(strokeNi5, &pointNi5_3);
   
-  AddStrokeToCharacter(charNi, strokeNi1);
-  AddStrokeToCharacter(charNi, strokeNi2);
-  AddStrokeToCharacter(charNi, strokeNi3);
-  AddStrokeToCharacter(charNi, strokeNi4);
-  AddStrokeToCharacter(charNi, strokeNi5);
+//   AddStrokeToCharacter(charNi, strokeNi1);
+//   AddStrokeToCharacter(charNi, strokeNi2);
+//   AddStrokeToCharacter(charNi, strokeNi3);
+//   AddStrokeToCharacter(charNi, strokeNi4);
+//   AddStrokeToCharacter(charNi, strokeNi5);
   
-  // -------------- Create "好" character --------------
-  struct Character* charHao = CreateCharacter(5, 15.0f, 1.0f, false);
+//   // -------------- Create "好" character --------------
+//   struct Character* charHao = CreateCharacter(5, 15.0f, 1.0f, false);
   
-  // Left radical top
-  struct Stroke* strokeHao1 = CreateStroke(2);
-  struct Point pointHao1_1 = {0.0f, 10.0f};
-  struct Point pointHao1_2 = {4.0f, 10.0f};
-  AddPointToStroke(strokeHao1, &pointHao1_1);
-  AddPointToStroke(strokeHao1, &pointHao1_2);
+//   // Left radical top
+//   struct Stroke* strokeHao1 = CreateStroke(2);
+//   struct Point pointHao1_1 = {0.0f, 10.0f};
+//   struct Point pointHao1_2 = {4.0f, 10.0f};
+//   AddPointToStroke(strokeHao1, &pointHao1_1);
+//   AddPointToStroke(strokeHao1, &pointHao1_2);
   
-  // Left radical vertical
-  struct Stroke* strokeHao2 = CreateStroke(2);
-  struct Point pointHao2_1 = {2.0f, 10.0f};
-  struct Point pointHao2_2 = {2.0f, 0.0f};
-  AddPointToStroke(strokeHao2, &pointHao2_1);
-  AddPointToStroke(strokeHao2, &pointHao2_2);
+//   // Left radical vertical
+//   struct Stroke* strokeHao2 = CreateStroke(2);
+//   struct Point pointHao2_1 = {2.0f, 10.0f};
+//   struct Point pointHao2_2 = {2.0f, 0.0f};
+//   AddPointToStroke(strokeHao2, &pointHao2_1);
+//   AddPointToStroke(strokeHao2, &pointHao2_2);
   
-  // Right horizontal top
-  struct Stroke* strokeHao3 = CreateStroke(2);
-  struct Point pointHao3_1 = {5.0f, 8.0f};
-  struct Point pointHao3_2 = {12.0f, 8.0f};
-  AddPointToStroke(strokeHao3, &pointHao3_1);
-  AddPointToStroke(strokeHao3, &pointHao3_2);
+//   // Right horizontal top
+//   struct Stroke* strokeHao3 = CreateStroke(2);
+//   struct Point pointHao3_1 = {5.0f, 8.0f};
+//   struct Point pointHao3_2 = {12.0f, 8.0f};
+//   AddPointToStroke(strokeHao3, &pointHao3_1);
+//   AddPointToStroke(strokeHao3, &pointHao3_2);
   
-  // Right middle
-  struct Stroke* strokeHao4 = CreateStroke(4);
-  struct Point pointHao4_1 = {5.0f, 5.0f};
-  struct Point pointHao4_2 = {12.0f, 5.0f};
-  struct Point pointHao4_3 = {8.0f, 5.0f};
-  struct Point pointHao4_4 = {8.0f, 2.0f};
-  AddPointToStroke(strokeHao4, &pointHao4_1);
-  AddPointToStroke(strokeHao4, &pointHao4_2);
-  AddPointToStroke(strokeHao4, &pointHao4_3);
-  AddPointToStroke(strokeHao4, &pointHao4_4);
+//   // Right middle
+//   struct Stroke* strokeHao4 = CreateStroke(4);
+//   struct Point pointHao4_1 = {5.0f, 5.0f};
+//   struct Point pointHao4_2 = {12.0f, 5.0f};
+//   struct Point pointHao4_3 = {8.0f, 5.0f};
+//   struct Point pointHao4_4 = {8.0f, 2.0f};
+//   AddPointToStroke(strokeHao4, &pointHao4_1);
+//   AddPointToStroke(strokeHao4, &pointHao4_2);
+//   AddPointToStroke(strokeHao4, &pointHao4_3);
+//   AddPointToStroke(strokeHao4, &pointHao4_4);
   
-  // Right bottom
-  struct Stroke* strokeHao5 = CreateStroke(2);
-  struct Point pointHao5_1 = {5.0f, 0.0f};
-  struct Point pointHao5_2 = {12.0f, 0.0f};
-  AddPointToStroke(strokeHao5, &pointHao5_1);
-  AddPointToStroke(strokeHao5, &pointHao5_2);
+//   // Right bottom
+//   struct Stroke* strokeHao5 = CreateStroke(2);
+//   struct Point pointHao5_1 = {5.0f, 0.0f};
+//   struct Point pointHao5_2 = {12.0f, 0.0f};
+//   AddPointToStroke(strokeHao5, &pointHao5_1);
+//   AddPointToStroke(strokeHao5, &pointHao5_2);
   
-  AddStrokeToCharacter(charHao, strokeHao1);
-  AddStrokeToCharacter(charHao, strokeHao2);
-  AddStrokeToCharacter(charHao, strokeHao3);
-  AddStrokeToCharacter(charHao, strokeHao4);
-  AddStrokeToCharacter(charHao, strokeHao5);
+//   AddStrokeToCharacter(charHao, strokeHao1);
+//   AddStrokeToCharacter(charHao, strokeHao2);
+//   AddStrokeToCharacter(charHao, strokeHao3);
+//   AddStrokeToCharacter(charHao, strokeHao4);
+//   AddStrokeToCharacter(charHao, strokeHao5);
   
-  // Add all characters to the segment
-  AddCharacterToSegment(segment, charH);
-  AddCharacterToSegment(segment, charI);
-  AddCharacterToSegment(segment, charNi);
-  AddCharacterToSegment(segment, charHao);
+//   // Add all characters to the segment
+//   AddCharacterToSegment(segment, charH);
+//   AddCharacterToSegment(segment, charI);
+//   AddCharacterToSegment(segment, charNi);
+//   AddCharacterToSegment(segment, charHao);
   
-  // Add segment to document
-  AddSegmentToDocument(doc, segment);
+//   // Add segment to document
+//   AddSegmentToDocument(doc, segment);
 
-  // WANRING: NO DATA IS FREED!!! REBOOT AFTER USE!!!
+//   // WANRING: NO DATA IS FREED!!! REBOOT AFTER USE!!!
 
-  return doc;
-}
+//   return doc;
+// }
 
 
 /* USER CODE END 4 */
