@@ -301,13 +301,15 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
         }
 
         // not at the beginning, count braces
-        if (jsonStarted && c == '{') {
+        if (jsonStarted && checkChar == '{')
+        {
           braceCount++;
         }
-        else if (jsonStarted && c == '}') {
+        else if (jsonStarted && checkChar == '}')
+        {
           braceCount--;
         }
-        
+
         // check the count of braces (if the message is complete)
         if (braceCount == 0) {
           // process the msg, with the length of the whole buffer
