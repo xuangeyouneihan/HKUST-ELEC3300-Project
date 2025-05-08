@@ -169,7 +169,7 @@ def cdc_data_handler(event_type, data):
         print("CDC 端口关闭:", data)
 
 def on_cdc_send():
-    """CDC 输出按钮事件，生成 JSON 数据（采用与导出 JSON 相同的逻辑），再通过先前选择的 USB CDC 端口发送
+    """CDC 输出按钮事件，生成 JSON 数据（压缩成单行），再通过先前选择的 USB CDC 端口发送
        第一次按下时调用 get_available_cdc_ports 让用户选择端口并启动监听，后续直接发送数据
     """
     global cdc_listener_started, cdc_selected_port
@@ -212,7 +212,8 @@ def on_cdc_send():
             segment_data
         ]
     }
-    out_json = json.dumps(out_data, ensure_ascii=False, indent=4, sort_keys=False)
+    # 使用 separators 参数压缩为单行 JSON（不添加 indent 和空格）
+    out_json = json.dumps(out_data, ensure_ascii=False, separators=(',',':'), sort_keys=False)
 
     # 第一次使用时，调用 get_available_cdc_ports 让用户选择一个端口
     if not cdc_selected_port:
