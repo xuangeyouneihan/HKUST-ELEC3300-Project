@@ -22,7 +22,7 @@
 #include "usbd_cdc_if.h"
 
 /* USER CODE BEGIN INCLUDE */
-
+#include <stdbool.h>
 /* USER CODE END INCLUDE */
 
 /* Private typedef -----------------------------------------------------------*/
