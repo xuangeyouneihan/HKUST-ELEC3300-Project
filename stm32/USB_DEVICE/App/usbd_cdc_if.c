@@ -324,7 +324,7 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
     }
 
   }
-  else // buffer overflow, unlikely in our case honesly
+  else // buffer overflow, unlikely in our case honestly
   {
     //  error and thats it
     jsonBufferIndex = 0;

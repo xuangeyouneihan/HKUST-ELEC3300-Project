@@ -1,13 +1,14 @@
 import tkinter as tk
 import tkinter.font as tkfont
 from tkinter import ttk, messagebox, filedialog
-import yaml
+import json
 import os
 from matplotlib import font_manager
 import numpy as np
 
 # 引入已有的 prepare_writing_robot_data 函数
-from functions import prepare_writing_robot_data
+from font_process import prepare_writing_robot_data
+from cdc import send_to_cdc, get_available_cdc_ports, listen_to_cdc
 
 global root, paper_var, page_width_var, page_height_var, top_margin_var, bottom_margin_var
 global left_margin_var, right_margin_var, font_size_var, font_family_var, font_path_var
@@ -120,8 +121,8 @@ def on_custom_dimensions(event):
     """当用户手动修改页面大小时，将纸张预设切换为自定义"""
     paper_var.set("自定义")
 
-def on_ok():
-    """确定按钮事件，调用 on_font_selection 检查字体选择，
+def on_json_export():
+    """导出 JSON 按钮事件，调用 on_font_selection 检查字体选择，
     再根据下拉菜单选择的字体获取对应的字体路径后调用生成函数
     """
     # 主动调用 on_font_selection 更新字体路径
@@ -149,8 +150,9 @@ def on_ok():
         messagebox.showerror("字体错误", "未找到字体文件，请使用浏览按钮选择字体文件！")
         return
 
-    segment_yaml_str = prepare_writing_robot_data(text_content, font_file, point_size)
-    segment_data = yaml.safe_load(segment_yaml_str)
+    # 获取 JSON 字符串
+    segment_json_str = prepare_writing_robot_data(text_content, font_file, point_size)
+    segment_data = json.loads(segment_json_str)
 
     out_data = {
         "page_width": page_width,
@@ -164,19 +166,103 @@ def on_ok():
         ]
     }
 
-    out_yaml = yaml.dump(out_data, allow_unicode=True, sort_keys=False)
+    out_json = json.dumps(out_data, ensure_ascii=False, indent=4)
     file_path = filedialog.asksaveasfilename(
-        title="保存 YAML 文件",
-        defaultextension=".yaml",
-        filetypes=[("YAML 文件", "*.yaml"), ("所有文件", "*.*")]
+        title="保存 JSON 文件",
+        defaultextension=".json",
+        filetypes=[("JSON 文件", "*.json"), ("所有文件", "*.*")]
     )
     if file_path:
         try:
             with open(file_path, "w", encoding="utf-8") as f:
-                f.write(out_yaml)
-            messagebox.showinfo("保存成功", "YAML 文件已保存至:\n" + file_path)
+                f.write(out_json)
+            messagebox.showinfo("保存成功", "JSON 文件已保存至:\n" + file_path)
         except Exception as e:
-            messagebox.showerror("保存错误", f"保存 YAML 文件时出错:\n{e}")
+            messagebox.showerror("保存错误", f"保存 JSON 文件时出错:\n{e}")
+
+# 新增全局变量，标识是否已启动 CDC 监听
+cdc_listener_started = False
+# 新增全局变量，保存用户选择的 CDC 端口（第一次选择后保持使用）
+cdc_selected_port = None
+
+def cdc_data_handler(event_type, data):
+    """
+    处理来自 CDC 的数据，通过事件类型区分正常数据、错误或端口关闭。
+    此处仅打印到控制台，实际应用中可更新界面日志控件等。
+    """
+    if event_type == "data":
+        print("CDC 收到数据:", data)
+    elif event_type == "error":
+        print("CDC 错误:", data)
+    elif event_type == "closed":
+        print("CDC 端口关闭:", data)
+
+def on_cdc_send():
+    """CDC 输出按钮事件，生成 JSON 数据并通过先前选择的 USB CDC 端口发送
+       第一次按下时调用 get_available_cdc_ports 让用户选择端口并启动监听，
+       后续直接发送数据
+    """
+    global cdc_listener_started, cdc_selected_port
+    # 更新字体路径
+    on_font_selection(None)
+    try:
+        page_width = float(page_width_var.get())
+        page_height = float(page_height_var.get())
+        top_margin = float(top_margin_var.get())
+        bottom_margin = float(bottom_margin_var.get())
+        left_margin = float(left_margin_var.get())
+        right_margin = float(right_margin_var.get())
+        point_size = float(font_size_var.get())
+    except ValueError:
+        messagebox.showerror("输入错误", "请检查数字输入项是否正确！")
+        return
+
+    text_content = text_input.get("1.0", tk.END).strip()
+    if not text_content:
+        messagebox.showerror("输入错误", "请输入文本内容！")
+        return
+
+    font_file = get_font_file()
+    if not font_file:
+        messagebox.showerror("字体错误", "未找到字体文件，请使用浏览按钮选择字体文件！")
+        return
+
+    segment_json_str = prepare_writing_robot_data(text_content, font_file, point_size)
+    segment_data = json.loads(segment_json_str)
+    out_data = {
+        "page_width": page_width,
+        "page_height": page_height,
+        "top_margin": top_margin,
+        "bottom_margin": bottom_margin,
+        "left_margin": left_margin,
+        "right_margin": right_margin,
+        "segments": [
+            segment_data
+        ]
+    }
+    out_json = json.dumps(out_data, ensure_ascii=False, indent=4)
+
+    # 第一次使用时，调用 get_available_cdc_ports 让用户选择一个端口
+    if not cdc_selected_port:
+        ports = get_available_cdc_ports()
+        if not ports:
+            messagebox.showerror("端口选择", "没有检测到可用的 CDC 端口！")
+            return
+        # 使用输入对话框显示可用端口供用户参考
+        selected_port = filedialog.askstring("选择 CDC 端口", "请输入一个可用的CDC端口（例如，" + ", ".join(ports) + "）：")
+        if not selected_port:
+            messagebox.showerror("端口选择", "未选择 CDC 端口！")
+            return
+        cdc_selected_port = selected_port
+        # 启动监听（仅第一次调用时启动）
+        listen_to_cdc(cdc_selected_port, baudrate=9600, data_callback=cdc_data_handler)
+        cdc_listener_started = True
+
+    success, msg = send_to_cdc(out_json, cdc_selected_port)
+    if success:
+        messagebox.showinfo("USB输出", msg)
+    else:
+        messagebox.showerror("USB输出错误", msg)
 
 def on_exit():
     """退出应用"""
@@ -258,12 +344,15 @@ text_input = tk.Text(frame_text, wrap="word", width=60, height=15)
 text_input.pack(fill="both", expand=True, padx=5, pady=5)
 
 # 底部按钮区
+# 修改底部按钮区，新按钮“导出JSON”和“使用CDC输出”
 frame_buttons = ttk.Frame(root)
 frame_buttons.grid(row=5, column=0, padx=10, pady=5, sticky="e")
-btn_ok = ttk.Button(frame_buttons, text="确定", command=on_ok)
-btn_ok.grid(row=0, column=0, padx=5)
+btn_export = ttk.Button(frame_buttons, text="导出 JSON", command=on_json_export)
+btn_export.grid(row=0, column=0, padx=5)
+btn_cdc = ttk.Button(frame_buttons, text="使用 CDC 输出", command=on_cdc_send)
+btn_cdc.grid(row=0, column=1, padx=5)
 btn_exit = ttk.Button(frame_buttons, text="退出", command=on_exit)
-btn_exit.grid(row=0, column=1, padx=5)
+btn_exit.grid(row=0, column=2, padx=5)
 
 # 窗口大小自适应
 root.grid_rowconfigure(4, weight=1)

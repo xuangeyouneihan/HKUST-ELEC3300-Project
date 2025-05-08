@@ -1897,11 +1897,19 @@ bool parseCharacter(struct Character *character, cJSON *json)
 // RPC 处理函数，解析收到的 JSON 数据并绘制文档
 void processRpcRequest(uint8_t *buffer, uint16_t length)
 {
-  // 确保数据以 '\0' 结尾
-  char json_data[1024] = {0};
-  memcpy(json_data, buffer, (length < 1023) ? length : 1023);
+  // 动态分配缓冲区，确保能够保存整个数据并以 '\0' 结尾
+  char *json_data = (char *)malloc(length + 1);
+  if (json_data == NULL)
+  {
+    const char *error_response = "{\"error\":\"内存分配失败\"}";
+    CDC_Transmit_FS((uint8_t *)error_response, strlen(error_response));
+    return;
+  }
+  memcpy(json_data, buffer, length);
+  json_data[length] = '\0';
 
   cJSON *root = cJSON_Parse(json_data);
+  free(json_data); // 解析后释放动态分配的内存
   if (root == NULL)
   {
     const char *error_response = "{\"error\":\"JSON解析失败\"}";
@@ -1913,7 +1921,7 @@ void processRpcRequest(uint8_t *buffer, uint16_t length)
   struct Document *document = (struct Document *)malloc(sizeof(struct Document));
   if (document == NULL)
   {
-    const char *error_response = "{\"error\":\"解析Document失败\"}";
+    const char *error_response = "{\"error\":\"内存分配失败\"}";
     CDC_Transmit_FS((uint8_t *)error_response, strlen(error_response));
     cJSON_Delete(root);
     return;

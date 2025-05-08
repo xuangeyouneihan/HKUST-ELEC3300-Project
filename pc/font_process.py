@@ -1,6 +1,6 @@
 from fontTools.pens.boundsPen import BoundsPen
 from fontTools.pens.recordingPen import RecordingPen
-import yaml
+import json
 import unicodedata
 from fontTools.ttLib import TTFont, TTCollection
 import os
@@ -450,4 +450,4 @@ def prepare_writing_robot_data(text, font_path, point_size):
             }
         data["characters"].append(char_item)
     
-    return yaml.dump(data, allow_unicode=True, sort_keys=False)
+    return json.dumps(data, allow_unicode=True, sort_keys=False)
