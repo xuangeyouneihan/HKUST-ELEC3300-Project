@@ -19,7 +19,8 @@ FONT_DICT = {f.name: f.fname for f in font_manager.fontManager.ttflist}
 available_fonts = sorted(FONT_DICT.keys())
 
 # 全局字体文件默认路径（这里默认使用映射字典中的 Arial 字体，如果存在）
-FONT_PATH = FONT_DICT.get("Arial", r"C:\Windows\Fonts\arial.ttf")
+BASE_DIR = os.path.dirname(__file__)
+FONT_PATH = os.path.join(BASE_DIR, "ReliefSingleLineCAD-Regular.ttf")
 
 # 纸张预设参数（单位：毫米）
 PAPER_PRESETS = {
@@ -62,47 +63,18 @@ def update_margins(*args):
         page_height_var.set(str(config["page_height"]))
 
 def get_font_file():
-    """获取字体文件路径：
-    根据下拉菜单中的字体名称，从 FONT_DICT 获取对应的字体文件路径，
-    如果找不到或路径不存在，则返回 font_path_var 中的备用值
-    """
-    selected_font = font_family_var.get()
-    candidate = FONT_DICT.get(selected_font, None)
-    if candidate and os.path.exists(candidate):
-        return candidate
+    """直接返回 font_path_var 中的字体文件路径，如果存在则返回，否则返回 None"""
     fallback_font = font_path_var.get()
     if os.path.exists(fallback_font):
         return fallback_font
     return None
 
-def update_font_weight():
-    """
-    根据当前选定的字体文件 (font_path_var) 对字重进行更新：
-    - 如果文件名中包含“Bold”，认为只有 Bold 这一个字重，设置该选项并将控件禁用；
-    - 否则设置为 ["Regular", "Bold"] 供用户选择。
-    """
+def on_font_selection(event=None):
+    """根据字体路径输入框更新全局变量 FONT_PATH"""
     candidate = font_path_var.get()
-    base = os.path.basename(candidate)
-    if "Bold" in base:
-        font_weight_combo['values'] = ("Bold",)
-        font_weight_var.set("Bold")
-        font_weight_combo.config(state="disabled")
-    else:
-        font_weight_combo['values'] = ("Regular", "Bold")
-        font_weight_var.set("Regular")
-        font_weight_combo.config(state="readonly")
-
-def on_font_selection(event):
-    """下拉菜单中选择字体时，根据 FONT_DICT 更新字体文件路径，
-    同时更新 font_path_var 和全局变量 FONT_PATH，并调用 update_font_weight 更新字重控件
-    """
-    selected_font = font_family_var.get()
-    candidate = FONT_DICT.get(selected_font, None)
-    if candidate and os.path.exists(candidate):
-        font_path_var.set(candidate)
-        global FONT_PATH
+    global FONT_PATH
+    if os.path.exists(candidate):
         FONT_PATH = candidate
-    update_font_weight()
 
 def browse_font():
     """点击浏览按钮后，允许用户手动选择字体文件"""
@@ -112,8 +84,6 @@ def browse_font():
     )
     if filename:
         font_path_var.set(filename)
-        # 浏览时直接将选择的字体文件路径赋给字体名称（用户可自行辨识）
-        font_family_var.set(os.path.basename(filename))
         global FONT_PATH
         FONT_PATH = filename
 
@@ -136,6 +106,7 @@ def on_json_export():
         left_margin = float(left_margin_var.get())
         right_margin = float(right_margin_var.get())
         point_size = float(font_size_var.get())
+        line_gap_adjust = float(line_gap_adjust_var.get())
     except ValueError:
         messagebox.showerror("输入错误", "请检查数字输入项是否正确！")
         return
@@ -151,7 +122,7 @@ def on_json_export():
         return
 
     # 获取 JSON 字符串
-    segment_json_str = prepare_writing_robot_data(text_content, font_file, point_size)
+    segment_json_str = prepare_writing_robot_data(text_content, font_file, point_size, line_gap_adjust=line_gap_adjust)
     segment_data = json.loads(segment_json_str)
 
     out_data = {
@@ -166,7 +137,7 @@ def on_json_export():
         ]
     }
 
-    out_json = json.dumps(out_data, ensure_ascii=False, indent=4)
+    out_json = json.dumps(out_data, ensure_ascii=False, indent=4, sort_keys=False)
     file_path = filedialog.asksaveasfilename(
         title="保存 JSON 文件",
         defaultextension=".json",
@@ -198,12 +169,11 @@ def cdc_data_handler(event_type, data):
         print("CDC 端口关闭:", data)
 
 def on_cdc_send():
-    """CDC 输出按钮事件，生成 JSON 数据并通过先前选择的 USB CDC 端口发送
-       第一次按下时调用 get_available_cdc_ports 让用户选择端口并启动监听，
-       后续直接发送数据
+    """CDC 输出按钮事件，生成 JSON 数据（采用与导出 JSON 相同的逻辑），再通过先前选择的 USB CDC 端口发送
+       第一次按下时调用 get_available_cdc_ports 让用户选择端口并启动监听，后续直接发送数据
     """
     global cdc_listener_started, cdc_selected_port
-    # 更新字体路径
+    # 先更新字体路径
     on_font_selection(None)
     try:
         page_width = float(page_width_var.get())
@@ -213,6 +183,7 @@ def on_cdc_send():
         left_margin = float(left_margin_var.get())
         right_margin = float(right_margin_var.get())
         point_size = float(font_size_var.get())
+        line_gap_adjust = float(line_gap_adjust_var.get())
     except ValueError:
         messagebox.showerror("输入错误", "请检查数字输入项是否正确！")
         return
@@ -227,7 +198,8 @@ def on_cdc_send():
         messagebox.showerror("字体错误", "未找到字体文件，请使用浏览按钮选择字体文件！")
         return
 
-    segment_json_str = prepare_writing_robot_data(text_content, font_file, point_size)
+    # 跟导出 JSON 的逻辑一致
+    segment_json_str = prepare_writing_robot_data(text_content, font_file, point_size, line_gap_adjust=line_gap_adjust)
     segment_data = json.loads(segment_json_str)
     out_data = {
         "page_width": page_width,
@@ -240,7 +212,7 @@ def on_cdc_send():
             segment_data
         ]
     }
-    out_json = json.dumps(out_data, ensure_ascii=False, indent=4)
+    out_json = json.dumps(out_data, ensure_ascii=False, indent=4, sort_keys=False)
 
     # 第一次使用时，调用 get_available_cdc_ports 让用户选择一个端口
     if not cdc_selected_port:
@@ -248,7 +220,6 @@ def on_cdc_send():
         if not ports:
             messagebox.showerror("端口选择", "没有检测到可用的 CDC 端口！")
             return
-        # 使用输入对话框显示可用端口供用户参考
         selected_port = filedialog.askstring("选择 CDC 端口", "请输入一个可用的CDC端口（例如，" + ", ".join(ports) + "）：")
         if not selected_port:
             messagebox.showerror("端口选择", "未选择 CDC 端口！")
@@ -313,29 +284,22 @@ entry_right.grid(row=3, column=1, padx=5, pady=2, sticky="w")
 frame_font = ttk.LabelFrame(root, text="字体设置")
 frame_font.grid(row=2, column=0, padx=10, pady=5, sticky="ew")
 ttk.Label(frame_font, text="字体大小(point):").grid(row=0, column=0, padx=5, pady=2, sticky="e")
-font_size_var = tk.StringVar(value="12")
+font_size_var = tk.StringVar(value="24")
 entry_font_size = ttk.Entry(frame_font, textvariable=font_size_var, width=10)
 entry_font_size.grid(row=0, column=1, padx=5, pady=2, sticky="w")
+line_gap_adjust_var = tk.StringVar(value="500")
+ttk.Label(frame_font, text="行距调整(point):").grid(row=1, column=0, padx=5, pady=2, sticky="e")
+line_gap_adjust_entry = ttk.Entry(frame_font, textvariable=line_gap_adjust_var, width=10)
+line_gap_adjust_entry.grid(row=1, column=1, padx=5, pady=2, sticky="w")
 
-# 字体选择控件（仅显示字体名称，下拉框的数据来源于 matplotlib 的 FONT_DICT）
-frame_font_select = ttk.LabelFrame(root, text="字体选择")
-frame_font_select.grid(row=3, column=0, padx=10, pady=5, sticky="ew")
-ttk.Label(frame_font_select, text="字体:").grid(row=0, column=0, padx=5, pady=2, sticky="e")
-font_family_var = tk.StringVar(value="Arial")
+frame_font_path = ttk.LabelFrame(root, text="字体设置")
+frame_font_path.grid(row=3, column=0, padx=10, pady=5, sticky="ew")
+ttk.Label(frame_font_path, text="字体路径:").grid(row=0, column=0, padx=5, pady=2, sticky="e")
 font_path_var = tk.StringVar(value=FONT_PATH)
-font_select_combo = ttk.Combobox(frame_font_select, textvariable=font_family_var,
-                                values=available_fonts, state="readonly", width=30)
-font_select_combo.grid(row=0, column=1, padx=5, pady=2, sticky="w")
-font_select_combo.bind("<<ComboboxSelected>>", on_font_selection)
-btn_browse = ttk.Button(frame_font_select, text="浏览", command=browse_font)
+entry_font_path = ttk.Entry(frame_font_path, textvariable=font_path_var, width=40)
+entry_font_path.grid(row=0, column=1, padx=5, pady=2, sticky="w")
+btn_browse = ttk.Button(frame_font_path, text="浏览", command=browse_font)
 btn_browse.grid(row=0, column=2, padx=5, pady=2)
-
-# 新增字重选择控件
-ttk.Label(frame_font_select, text="字重:").grid(row=1, column=0, padx=5, pady=2, sticky="e")
-font_weight_var = tk.StringVar(value="Regular")
-font_weight_combo = ttk.Combobox(frame_font_select, textvariable=font_weight_var,
-                                state="readonly", width=30)
-font_weight_combo.grid(row=1, column=1, padx=5, pady=2, sticky="w")
 
 # 文本输入区
 frame_text = ttk.LabelFrame(root, text="输入文本")

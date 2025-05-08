@@ -995,8 +995,7 @@ void drawDocument(struct Document *document)
   // set the starting position at the top left corner of the page
   float Global_X = document->left_margin;
   float Global_Y = -(document->top_margin);
-  // float scale = 0.2; // 1 step = 0.2 mm
-  float scale = 2;
+  float scale = 0.2; // 1 step = 0.2 mm
 
   // iterate through each segment in the document
   for (int i = 0; i < document->segmentCount; i++)

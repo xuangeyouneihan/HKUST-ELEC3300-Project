@@ -1,12 +1,10 @@
 from fontTools.pens.boundsPen import BoundsPen
 from fontTools.pens.recordingPen import RecordingPen
+from fontTools.pens.transformPen import TransformPen
 import json
 import unicodedata
 from fontTools.ttLib import TTFont, TTCollection
 import os
-import numpy as np
-from skimage.morphology import skeletonize
-import cv2
 
 def pt_to_mm(points):
     """
@@ -36,14 +34,14 @@ def get_descender(font, scale=1.0):
     else:
         return None
 
-def get_line_gap(font, scale=1.0):
+def get_line_gap(font, scale=1.0, adjust=0):
     """
-    获取字体的 lineGap（行间距），乘以 scale 后返回（单位为 point）。
+    获取字体的 lineGap（行间距），加上用户指定的 adjust 后再乘以 scale（单位为 point），返回最终的行间距。
     """
     if "hhea" in font:
-        return font["hhea"].lineGap * scale
+        return (font["hhea"].lineGap + adjust) * scale
     elif "OS/2" in font:
-        return font["OS/2"].sTypoLineGap * scale
+        return (font["OS/2"].sTypoLineGap + adjust) * scale
     else:
         return None
 
@@ -80,13 +78,13 @@ def get_descender_in_mm(font, point_size):
         return None
     return pt_to_mm(descender_pt)
 
-def get_line_gap_in_mm(font, point_size):
+def get_line_gap_in_mm(font, point_size, adjust=0):
     """
     给定字体和目标字号，返回 lineGap（行间距），单位：毫米。
     """
     upm = font["head"].unitsPerEm
     scale = point_size / upm
-    line_gap_pt = get_line_gap(font, scale)
+    line_gap_pt = get_line_gap(font, scale, adjust)
     if line_gap_pt is None:
         return None
     return pt_to_mm(line_gap_pt)
@@ -227,111 +225,81 @@ def get_glyph_width_in_mm(font, char, point_size):
         return None
     return pt_to_mm(width_pt)
 
-class StrokePen(object):
-    """
-    自定义笔，用于记录字形各笔画上的坐标点，按绘制顺序排列。
-    坐标记录直接基于字体设计坐标（基线 y=0 为原点），不做平移处理。
-    """
-    def __init__(self, scale=1.0):
-        self.scale = scale
-        self.strokes = []
-        self.current_stroke = []
-    
-    def _apply_scale(self, pt):
-        return (pt[0] * self.scale, pt[1] * self.scale)
-    
-    def moveTo(self, pt):
-        if self.current_stroke:
-            self.strokes.append(self.current_stroke)
-        self.current_stroke = [self._apply_scale(pt)]
-    
-    def lineTo(self, pt):
-        self.current_stroke.append(self._apply_scale(pt))
-    
-    def curveTo(self, *points):
-        for pt in points:
-            self.current_stroke.append(self._apply_scale(pt))
-    
-    def qCurveTo(self, *points):
-        for pt in points:
-            self.current_stroke.append(self._apply_scale(pt))
-    
-    def closePath(self):
-        if self.current_stroke:
-            self.strokes.append(self.current_stroke)
-            self.current_stroke = []
-    
-    def endPath(self):
-        if self.current_stroke:
-            self.strokes.append(self.current_stroke)
-            self.current_stroke = []
+class MyTransformPen(TransformPen):
+    def _transformPoint(self, pt):
+        # 确保 pt 是一个 (float, float) 的元组
+        x, y = pt
+        return super()._transformPoint((float(x), float(y)))
 
-def skeletonize_glyph(recorder, upm, point_size):
+def flatten_transform(transform):
     """
-    通过图像骨架化生成单线路径（辅助函数）。
-    支持两种情况：若 recorder 具有属性 strokes，则使用 recorder.strokes；
-    否则使用 recorder.value。
+    递归将 transform 列表扁平化，确保所有元素均为数值。
     """
-    # 将矢量路径渲染为位图
-    size = int(upm * 2)  # 高分辨率保证精度
-    img = np.zeros((size, size), dtype=np.uint8)
-    
-    # 优先采用 recorder.strokes（如自定义 StrokePen），否则使用 recorder.value
-    input_contours = recorder.strokes if hasattr(recorder, "strokes") else recorder.value
-    
-    for contour in input_contours:
-        # 将轮廓列表转换为 NumPy 数组
-        pts = np.array(contour, dtype=np.int32)
-        pts = (pts + size // 2).clip(0, size - 1)
-        cv2.fillPoly(img, [pts], 255)
-    
-    # 骨架化处理：将位图二值化后执行骨架化
-    skeleton = skeletonize(img // 255)
-    skeleton = (skeleton * 255).astype(np.uint8)
-    
-    # 提取骨架轮廓并矢量化
-    contours, _ = cv2.findContours(skeleton, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-    
-    scale = point_size / upm
-    strokes = []
-    for contour in contours:
-        # 使用 squeeze() 展平轮廓数据
-        c = contour.squeeze()
-        if c.ndim == 1:
-            c = np.atleast_2d(c)
-        stroke = []
-        for pt in c:  # 现在 c 的形状为 (N, 2)
-            x = (pt[0] - size // 2) * scale
-            y = (pt[1] - size // 2) * scale
-            # 转为内置 float 类型，单位转换：1 point ≈ 0.3527 mm
-            stroke.append([float(x * 0.3527), float(y * 0.3527)])
-        strokes.append(stroke)
-    
-    return strokes
+    flattened = []
+    for v in transform:
+        if isinstance(v, (list, tuple)):
+            flattened.extend(flatten_transform(v))
+        else:
+            flattened.append(v)
+    return tuple(flattened)
 
-def get_stroke_points_in_mm(font, char, point_size, simplify_threshold=10, is_single_line_font=True):
+def get_stroke_points_in_mm(font, char, point_size):
     """
-    改进版：弃用 RecordingPen，改用自定义 StrokePen，
-    将双线路径简化为单线，并提取坐标点（毫米单位）。
-    参数：
-        simplify_threshold: 路径简化阈值（值越小，简化程度越高）。
+    使用 RecordingPen 记录字形绘制路径，支持组件（composite glyph）功能，
+    将记录的所有点按设计单位先乘以缩放因子，再经 pt_to_mm 转换为毫米单位，
+    最后返回每笔画的点序列列表。
+    对于所有字形（包括复合字形），遇到 closePath 命令时均不闭合路径，而是直接结束当前笔画。
     """
-    # 计算缩放因子（设计单位到毫米），注意后续转换：1 point ≈ 0.3527 mm
+    # 计算缩放因子，从字体设计单位转换到目标 point 单位
     upm = font["head"].unitsPerEm
     scale = point_size / upm
 
-    # 获取字符对应的 glyph 名称
     cmap = font.getBestCmap()
     code = ord(char)
     if code not in cmap:
         return None
     glyph_name = cmap[code]
 
-    # 用自定义的 StrokePen 替换 RecordingPen
-    pen = StrokePen(scale=scale)
+    pen = RecordingPen()
     if "glyf" in font:
         glyph = font["glyf"][glyph_name]
-        glyph.draw(pen, font["glyf"])
+        if glyph.isComposite():
+            # 对于复合字形，遍历每个组件
+            for comp in glyph.components:
+                compGlyph = font["glyf"][comp.glyphName]
+
+                transform_from_attr = None
+                translation = None
+
+                # 如果有 transform 属性，则提取
+                if hasattr(comp, 'transform'):
+                    flat_tr = flatten_transform(comp.transform)
+                    transform_from_attr = tuple(float(v) for v in flat_tr)
+                    # 如果仅返回4个值，则补充 (0,0)
+                    if len(transform_from_attr) == 4:
+                        transform_from_attr = transform_from_attr + (0.0, 0.0)
+                
+                # 如果有 x 和 y 属性，则构造平移矩阵
+                if hasattr(comp, 'x') and hasattr(comp, 'y'):
+                    translation = (1, 0, 0, 1, float(comp.x), float(comp.y))
+                
+                # 合并两种变换：
+                # 如果两者都有，则先应用 transform 属性，再加上 x/y 平移
+                if transform_from_attr is not None and translation is not None:
+                    a, b, c, d, e, f = transform_from_attr
+                    _, _, _, _, tx, ty = translation
+                    combined = (a, b, c, d, e + tx, f + ty)
+                elif transform_from_attr is not None:
+                    combined = transform_from_attr
+                elif translation is not None:
+                    combined = translation
+                else:
+                    combined = (1, 0, 0, 1, 0, 0)
+
+                tPen = MyTransformPen(pen, combined)
+                compGlyph.draw(tPen, font["glyf"])
+        else:
+            glyph.draw(pen, font["glyf"])
     elif "CFF " in font:
         try:
             cff_table = font["CFF "].cff
@@ -341,20 +309,35 @@ def get_stroke_points_in_mm(font, char, point_size, simplify_threshold=10, is_si
         except Exception:
             return None
 
-    if not is_single_line_font:
-        # 选项：对笔画进行图像骨架化处理
-        # 请确保 skeletonize_glyph 函数内部已修改为：
-        # 遍历 (pen.strokes if hasattr(pen, 'strokes') else pen.value)
-        strokes = skeletonize_glyph(pen, upm, point_size)
-    else:
-        strokes = []
-        for stroke in pen.strokes:
-            stroke_points = []
-            for (x, y) in stroke:
-                stroke_points.append([pt_to_mm(x), pt_to_mm(y)])
-            strokes.append(stroke_points)
-    
-    return strokes
+    # 解析 RecordingPen 记录的绘制命令，提取各笔画的点序列
+    strokes = []
+    current_stroke = []
+    for command, points in pen.value:
+        if command == "moveTo":
+            if current_stroke:
+                strokes.append(current_stroke)
+            # 新笔画的起点
+            current_stroke = [points[0]]
+        elif command in ("lineTo", "curveTo", "qCurveTo"):
+            if not current_stroke:
+                current_stroke = []
+            current_stroke.extend(points)
+        elif command == "closePath":
+            if current_stroke:
+                # 对于所有字形直接结束当前笔画，不闭合路径
+                strokes.append(current_stroke)
+                current_stroke = []
+    if current_stroke:
+        strokes.append(current_stroke)
+
+    # 将每个点转换为毫米单位：先乘以 scale (转换为 point 单位)，再转换为毫米
+    new_strokes = []
+    for stroke in strokes:
+        new_stroke = []
+        for (x, y) in stroke:
+            new_stroke.append([pt_to_mm(x * scale), pt_to_mm(y * scale)])
+        new_strokes.append(new_stroke)
+    return new_strokes
 
 def load_font(font_path, font_number=0):
     """
@@ -369,7 +352,7 @@ def load_font(font_path, font_number=0):
     else:
         return TTFont(font_path)
 
-def prepare_writing_robot_data(text, font_path, point_size):
+def prepare_writing_robot_data(text, font_path, point_size, line_gap_adjust):
     """
     根据输入字符串、字体文件路径和目标字号（point），生成写字机器人数据，
     数据包含如下键：
@@ -398,7 +381,7 @@ def prepare_writing_robot_data(text, font_path, point_size):
     # 提取全局行高相关参数（单位：毫米）
     ascender = get_ascender_in_mm(font, point_size)
     descender = get_descender_in_mm(font, point_size)
-    line_gap = get_line_gap_in_mm(font, point_size)
+    line_gap = get_line_gap_in_mm(font, point_size, adjust=line_gap_adjust)
     
     # 构造顶层数据结构（移除 segments 键）
     data = {
@@ -436,6 +419,16 @@ def prepare_writing_robot_data(text, font_path, point_size):
                 "left_side_bearing": 0,
                 "strokes": []
             }
+        elif ch == " " or ch == "　":
+            # 如果字符为空格，则不解析笔画
+            adv = get_advance_width_in_mm(font, ch, point_size)
+            lsb = get_left_side_bearing_in_mm(font, ch, point_size)
+            char_item = {
+                "is_line_feed": False,
+                "advance_width": adv if adv is not None else 0,
+                "left_side_bearing": lsb if lsb is not None else 0,
+                "strokes": []
+            }
         else:
             adv = get_advance_width_in_mm(font, ch, point_size)
             lsb = get_left_side_bearing_in_mm(font, ch, point_size)
@@ -450,4 +443,4 @@ def prepare_writing_robot_data(text, font_path, point_size):
             }
         data["characters"].append(char_item)
     
-    return json.dumps(data, allow_unicode=True, sort_keys=False)
+    return json.dumps(data, ensure_ascii=False, indent=4, sort_keys=False)
