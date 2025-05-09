@@ -203,11 +203,11 @@ int main(void)
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET); // enable
+  penup();
   moveToXY(100, 0);
   moveToXY(-100, 0);
   moveToXY(0, -100);
   moveToXY(0, 100);
-  penup();
   pendown();
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET); // disable
   /* USER CODE END 2 */

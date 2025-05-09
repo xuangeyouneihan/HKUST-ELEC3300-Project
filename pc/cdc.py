@@ -15,11 +15,8 @@ def send_to_cdc(out_json, com_port, baudrate=9600):
     返回 (success, message) tuple
     """
     try:
-        print(com_port)
         ser = serial.Serial(port=com_port, baudrate=baudrate, timeout=1)
-        print(2)
         ser.write(out_json.encode("utf-8"))
-        print(1)
         ser.close()
         return True, f"数据已通过 {com_port} 发送"
     except Exception as e:
