@@ -65,7 +65,9 @@
 /* USER CODE BEGIN PRIVATE_DEFINES */
 
 // ANCHOR
-#define MAX_JSON_SIZE 4096
+#define MAX_JSON_SIZE 16384
+#define SEGMENT_SIZE 32
+#define JSON_TIMEOUT 100 // 毫秒，若需要可用超时机制
 
 /* USER CODE END PRIVATE_DEFINES */
 
@@ -103,6 +105,7 @@ uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
 // ANCHOR
 static uint8_t jsonBuffer[MAX_JSON_SIZE];
 static int32_t jsonBufferIndex = 0; // current position where to write the next data
+static bool jsonReceiving = false;
 
 /* USER CODE END PRIVATE_VARIABLES */
 
@@ -268,85 +271,70 @@ static int8_t CDC_Control_FS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
 static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 6 */
-  CDC_Transmit_FS(Buf, *Len);
-  // ANCHOR
 
+  // return (USBD_OK);
+  // CDC_Transmit_FS(Buf, *Len);
+  // HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
+  // HAL_Delay(1);
+  // HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
 
-  // to check if the message is complete
-  // we need to keep track of the depth of the braces
-  // outermost braces are the first and last ones
-  static int braceCount = 0;
-  static bool jsonStarted = false;
+  uint32_t currentTick = HAL_GetTick();
 
-
-  // check if the buffer is full
-  if (jsonBufferIndex + *Len < MAX_JSON_SIZE) 
+  if (!jsonReceiving)
   {
-    // not full, copy the Bef data to the current buffer position
+    jsonReceiving = true;
+  }
+  // 更新最后一次接收时间（超时判断可在后台任务中使用）
+  // lastPacketTick = currentTick;  // 如果需要超时机制，可用全局变量保存
+
+  // 将接收到的数据追加到全局 jsonBuffer 中
+  if (jsonBufferIndex + *Len < MAX_JSON_SIZE)
+  {
     memcpy(jsonBuffer + jsonBufferIndex, Buf, *Len);
     jsonBufferIndex += *Len;
-
-
-    // check if the message is complete
-
-    // first, check if there is anything in this chunk
-    if (jsonBufferIndex > 0) {
-      //scan the newly recieved data chunk
-      for (int i = jsonBufferIndex - *Len; i < jsonBufferIndex; i++) {
-        char checkChar = jsonBuffer[i];
-
-        // CAUTION: we assume incoming data is valid json, so no check for that
-        //          we assume no interruption in the middle of a json message, so no timeout check
-
-        // check if this is the beginning (this is the first chunk)
-        if (!jsonStarted && checkChar == '{') {
-          jsonStarted = true;
-          braceCount = 1; // the outermost brace
-        }
-
-        // not at the beginning, count braces
-        if (jsonStarted && checkChar == '{')
-        {
-          braceCount++;
-        }
-        else if (jsonStarted && checkChar == '}')
-        {
-          braceCount--;
-        }
-
-        // check the count of braces (if the message is complete)
-        if (braceCount == 0) {
-          // add null terminator to the end of the buffer
-          jsonBuffer[jsonBufferIndex] = '\0';
-          // process the msg, with the length of the whole buffer
-          processRpcRequest(jsonBuffer, jsonBufferIndex);
-
-          // reset the buffer index and the brace count
-          jsonBufferIndex = 0;
-          jsonStarted = false;
-          braceCount = 0;
-        }
-      }
-    }
-
   }
-  else // buffer overflow, unlikely in our case honestly
+  else
   {
-    // Reset all state variables
+    // 若缓冲区溢出，则重置状态
     jsonBufferIndex = 0;
-    jsonStarted = false;
-    braceCount = 0;
-
-    //  error and thats it
-    jsonBufferIndex = 0;
+    jsonReceiving = false;
     const char *error = "{Buffer overflow}";
-    CDC_Transmit_FS((uint8_t*)error, strlen(error));
+    CDC_Transmit_FS((uint8_t *)error, strlen(error));
+    goto prepare_next;
   }
-  
-  // prepare for the next chunk
-  USBD_CDC_SetRxBuffer(&hUsbDeviceFS, &Buf[0]);
+
+  // 判断当前段是否为终止段
+  // 条件: 当前段不足32字节（说明是最后一段）
+  if ((*Len) < SEGMENT_SIZE)
+  {
+    // 如果终止段的首个字节为 '\0'
+    // 则认为该段无有效数据，所以不必重复追加（取消这部分数据）
+    if (Buf[0] == 0)
+    {
+      // 撤销这段追加的数据：将 jsonBufferIndex 回退
+      jsonBufferIndex -= *Len;
+    }
+    // 添加结束符（如果空间允许）
+    if (jsonBufferIndex < MAX_JSON_SIZE)
+      jsonBuffer[jsonBufferIndex] = '\0';
+    // 以下这段可能会有很大问题
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
+    HAL_Delay(1000);
+    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
+    // 发送并处理完整数据
+    CDC_Transmit_FS(jsonBuffer, jsonBufferIndex);
+    processRpcRequest(jsonBuffer, jsonBufferIndex);
+    // 重置状态
+    jsonBufferIndex = 0;
+    jsonReceiving = false;
+  }
+
+prepare_next:
+  // 准备接收下一数据块
+  USBD_CDC_SetRxBuffer(&hUsbDeviceFS, Buf);
   USBD_CDC_ReceivePacket(&hUsbDeviceFS);
-  return (USBD_OK);
+  CDC_Transmit_FS(jsonBuffer, jsonBufferIndex);
+  return USBD_OK;
   /* USER CODE END 6 */
 }
 
