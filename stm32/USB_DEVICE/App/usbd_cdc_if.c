@@ -23,6 +23,7 @@
 
 /* USER CODE BEGIN INCLUDE */
 #include <stdbool.h>
+#include "main.h"
 /* USER CODE END INCLUDE */
 
 /* Private typedef -----------------------------------------------------------*/

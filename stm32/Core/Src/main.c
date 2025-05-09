@@ -218,8 +218,7 @@ int main(void)
   {
     if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0))
     {
-      // drawFu();
-      drawOneStrokeFromDoc();
+      drawFu();
     }
     if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13))
     {
@@ -1426,33 +1425,33 @@ bool AddPointToStroke(struct Stroke *stroke, struct Point *point)
 //
 // WANRING: NO DATA IS FREED!!! REBOOT AFTER USE!!!
 
-void drawOneStrokeFromDoc()
-{
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET); // enable
+// void drawOneStrokeFromDoc()
+// {
+//   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET); // enable
 
-  struct Document *doc = CreateDocument(1, 297.0f, 20.0f, 20.0f, 20.0f, 20.0f, 210.0f); // A4 size in mm
-  struct Segment *seg = CreateSegment(1, 10.0f, 3.0f, 2.0f, 5.0f);
-  struct Character *chara = CreateCharacter(1, 12.0f, 1.0f, false);
-  struct Stroke *stroke = CreateStroke(2);
+//   struct Document *doc = CreateDocument(1, 297.0f, 20.0f, 20.0f, 20.0f, 20.0f, 210.0f); // A4 size in mm
+//   struct Segment *seg = CreateSegment(1, 10.0f, 3.0f, 2.0f, 5.0f);
+//   struct Character *chara = CreateCharacter(1, 12.0f, 1.0f, false);
+//   struct Stroke *stroke = CreateStroke(2);
 
-  struct Point pointA1_1 = {0.0f, 0.0f};
-  struct Point pointA1_2 = {10.0f, -10.0f};
+//   struct Point pointA1_1 = {0.0f, 0.0f};
+//   struct Point pointA1_2 = {10.0f, -10.0f};
 
-  AddPointToStroke(stroke, &pointA1_1);
-  AddPointToStroke(stroke, &pointA1_2);
+//   AddPointToStroke(stroke, &pointA1_1);
+//   AddPointToStroke(stroke, &pointA1_2);
 
-  AddStrokeToCharacter(chara, stroke);
+//   AddStrokeToCharacter(chara, stroke);
 
-  AddCharacterToSegment(seg, chara);
+//   AddCharacterToSegment(seg, chara);
 
-  AddSegmentToDocument(doc, seg);
+//   AddSegmentToDocument(doc, seg);
 
-  drawDocument(doc);
+//   drawDocument(doc);
 
-  // WANRING: NO DATA IS FREED!!! REBOOT AFTER USE!!!
+//   // WANRING: NO DATA IS FREED!!! REBOOT AFTER USE!!!
 
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET); // disable
-}
+//   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET); // disable
+// }
 
 // void draw_R()
 // {
