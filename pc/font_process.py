@@ -5,6 +5,11 @@ import json
 import unicodedata
 from fontTools.ttLib import TTFont, TTCollection
 import os
+import cv2
+import numpy as np
+import freetype
+from skimage.morphology import medial_axis
+import io
 
 def pt_to_mm(points):
     """
@@ -36,12 +41,12 @@ def get_descender(font, scale=1.0):
 
 def get_line_gap(font, scale=1.0, adjust=0):
     """
-    获取字体的 lineGap（行间距），加上用户指定的 adjust 后再乘以 scale（单位为 point），返回最终的行间距。
+    获取字体的 lineGap（行间距），乘以 scale后再加上用户指定的 adjust（单位为 point），返回最终的行间距。
     """
     if "hhea" in font:
-        return (font["hhea"].lineGap + adjust) * scale
+        return font["hhea"].lineGap * scale + adjust
     elif "OS/2" in font:
-        return (font["OS/2"].sTypoLineGap + adjust) * scale
+        return font["OS/2"].sTypoLineGap * scale + adjust
     else:
         return None
 
@@ -243,14 +248,19 @@ def flatten_transform(transform):
             flattened.append(v)
     return tuple(flattened)
 
-def get_stroke_points_in_mm(font, char, point_size):
+def get_stroke_points_in_mm(font, char, point_size, allow_closed_paths=False):
     """
     使用 RecordingPen 记录字形绘制路径，支持组件（composite glyph）功能，
     将记录的所有点按设计单位先乘以缩放因子，再经 pt_to_mm 转换为毫米单位，
     最后返回每笔画的点序列列表。
-    对于所有字形（包括复合字形），遇到 closePath 命令时均不闭合路径，而是直接结束当前笔画。
+
+    参数:
+      allow_closed_paths: 默认 False。如果为 True，则遇到 closePath 命令时闭合路径，
+                          否则直接结束当前笔画（不闭合）。
+      apply_skeleton: 默认 False。如果为 True 且 allow_closed_paths 为 True（即为轮廓字体），
+                      则对最终笔画调用骨架化处理；否则不调用骨架化函数。
     """
-    # 计算缩放因子，从字体设计单位转换到目标 point 单位
+    # 计算缩放因子（从字体设计单位转换到目标 point 单位）
     upm = font["head"].unitsPerEm
     scale = point_size / upm
 
@@ -275,7 +285,6 @@ def get_stroke_points_in_mm(font, char, point_size):
                 if hasattr(comp, 'transform'):
                     flat_tr = flatten_transform(comp.transform)
                     transform_from_attr = tuple(float(v) for v in flat_tr)
-                    # 如果仅返回4个值，则补充 (0,0)
                     if len(transform_from_attr) == 4:
                         transform_from_attr = transform_from_attr + (0.0, 0.0)
                 
@@ -283,8 +292,7 @@ def get_stroke_points_in_mm(font, char, point_size):
                 if hasattr(comp, 'x') and hasattr(comp, 'y'):
                     translation = (1, 0, 0, 1, float(comp.x), float(comp.y))
                 
-                # 合并两种变换：
-                # 如果两者都有，则先应用 transform 属性，再加上 x/y 平移
+                # 合并两种变换：如果两者都有，则先应用 transform 属性，再加上 x/y 平移
                 if transform_from_attr is not None and translation is not None:
                     a, b, c, d, e, f = transform_from_attr
                     _, _, _, _, tx, ty = translation
@@ -309,14 +317,13 @@ def get_stroke_points_in_mm(font, char, point_size):
         except Exception:
             return None
 
-    # 解析 RecordingPen 记录的绘制命令，提取各笔画的点序列
+    # 解析 RecordingPen 记录的命令，提取各笔画的点序列
     strokes = []
     current_stroke = []
     for command, points in pen.value:
         if command == "moveTo":
             if current_stroke:
                 strokes.append(current_stroke)
-            # 新笔画的起点
             current_stroke = [points[0]]
         elif command in ("lineTo", "curveTo", "qCurveTo"):
             if not current_stroke:
@@ -324,7 +331,8 @@ def get_stroke_points_in_mm(font, char, point_size):
             current_stroke.extend(points)
         elif command == "closePath":
             if current_stroke:
-                # 对于所有字形直接结束当前笔画，不闭合路径
+                if allow_closed_paths:
+                    current_stroke.append(current_stroke[0])
                 strokes.append(current_stroke)
                 current_stroke = []
     if current_stroke:
@@ -337,7 +345,144 @@ def get_stroke_points_in_mm(font, char, point_size):
         for (x, y) in stroke:
             new_stroke.append([pt_to_mm(x * scale), pt_to_mm(y * scale)])
         new_strokes.append(new_stroke)
+
     return new_strokes
+
+def get_skeletonized_stroke_points_in_mm(font_path, char, point_size):
+    """
+    利用 freetype-py 渲染字符生成二值图像，
+    然后采用 skimage.morphology.skeletonize 进行骨架化，
+    接着利用 cv2.findContours 分离轮廓，并通过 cv2.approxPolyDP 简化点集，
+    最后将像素坐标转换为毫米（假设 1 像素 = 0.1 毫米，即 factor = 10）。
+
+    为了解决字面太小的问题，将骨架化得到的初步笔画，根据 load_font 提取的 glyph 边界进行线性变换，
+    复合字形时利用 BoundsPen 计算边界。转换结果使得笔画坐标映射到字体真实字形所在范围。
+
+    同时考虑字体可能没有 glyf 表而只有 CFF 表的情况。
+    
+    参数:
+      font_path: 字体文件路径
+      char: 目标字符
+      point_size: 目标字号（单位：point）
+    """
+    import io
+    from skimage.morphology import skeletonize
+    from fontTools.ttLib import TTFont
+    from fontTools.pens.boundsPen import BoundsPen
+
+    # 定义转换因子：1毫米 = 10像素 => 1像素 ≈ 0.1 毫米
+    factor = 10
+
+    # 将反斜杠转换为正斜杠
+    font_path = font_path.replace("\\", "/")
+    with open(font_path, "rb") as f:
+        font_bytes = io.BytesIO(f.read())
+
+    # 使用 freetype 渲染字符
+    import freetype
+    face = freetype.Face(font_bytes)
+    face.set_char_size(int(point_size * 64))
+    face.load_char(char, freetype.FT_LOAD_RENDER)
+    bitmap = face.glyph.bitmap
+    if not bitmap.buffer:
+        return []
+    bmp = np.array(bitmap.buffer, dtype=np.uint8).reshape((bitmap.rows, bitmap.width))
+
+    # 二值化图像（低于阈值认为背景）
+    _, img = cv2.threshold(bmp, 10, 255, cv2.THRESH_BINARY)
+
+    # 骨架化（传入布尔图像）
+    skel_bool = medial_axis(img > 0)
+    skel_img = (skel_bool.astype(np.uint8)) * 255
+
+    # 分离骨架轮廓，并简化轮廓点
+    contours, _ = cv2.findContours(skel_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
+    initial_strokes = []
+    epsilon = 5.0  # 简化精度（单位：像素）
+    for cnt in contours:
+        cnt = cnt.reshape(-1, 2)
+        approx = cv2.approxPolyDP(cnt, epsilon, False).reshape(-1, 2)
+        stroke_mm = []
+        for (px, py) in approx:
+            x_mm = px / factor
+            y_mm = py / factor
+            stroke_mm.append([x_mm, y_mm])
+        if stroke_mm:
+            initial_strokes.append(stroke_mm)
+
+    if not initial_strokes:
+        return initial_strokes
+
+    # ----------------- 获取字体字形的真实边界 -----------------
+    font_tt = load_font(font_path)
+    cmap = font_tt.getBestCmap()
+    code = ord(char)
+    if code not in cmap:
+        return initial_strokes
+    glyph_name = cmap[code]
+
+    # 判断字体采用 glyf 表还是 CFF 表，并获取字形边界
+    if "glyf" in font_tt:
+        glyph = font_tt["glyf"][glyph_name]
+        if glyph.isComposite():
+            bp = BoundsPen(font_tt["glyf"])
+            glyph.draw(bp)
+            if bp.bounds is None:
+                return initial_strokes
+            xMin, yMin, xMax, yMax = bp.bounds
+        else:
+            if glyph.xMin is None or glyph.xMax is None or glyph.yMin is None or glyph.yMax is None:
+                return initial_strokes
+            xMin, yMin, xMax, yMax = glyph.xMin, glyph.yMin, glyph.xMax, glyph.yMax
+    elif "CFF " in font_tt:
+        try:
+            cff_table = font_tt["CFF "].cff
+            top_dict = cff_table.topDictIndex[0]
+            charString = top_dict.CharStrings[glyph_name]
+            bp = BoundsPen(None)
+            charString.draw(bp)
+            if bp.bounds is None:
+                return initial_strokes
+            xMin, yMin, xMax, yMax = bp.bounds
+        except Exception:
+            return initial_strokes
+    else:
+        return initial_strokes
+
+    # 将字体设计单位转换到 point 单位，再转换为毫米
+    upm = font_tt["head"].unitsPerEm
+    scale_ttf = point_size / upm
+    glyph_mm_left   = pt_to_mm(xMin * scale_ttf)
+    glyph_mm_right  = pt_to_mm(xMax * scale_ttf)
+    glyph_mm_bottom = pt_to_mm(yMin * scale_ttf)
+    glyph_mm_top    = pt_to_mm(yMax * scale_ttf)
+    desired_width = glyph_mm_right - glyph_mm_left
+    desired_height = glyph_mm_top - glyph_mm_bottom
+
+    # 计算骨架图中实际覆盖区域（单位：毫米）
+    ys, xs = np.nonzero(skel_img)
+    left_skel = np.min(xs) / factor
+    right_skel = np.max(xs) / factor
+    top_skel = np.min(ys) / factor
+    bottom_skel = np.max(ys) / factor
+    width_skel = right_skel - left_skel
+    height_skel = bottom_skel - top_skel
+
+    # 计算均匀放缩因子（保持长宽比例）
+    scale_factor = min(desired_width / width_skel, desired_height / height_skel)
+
+    # 将初步骨架点进行线性变换（平移与缩放）
+    transformed_strokes = []
+    for stroke in initial_strokes:
+        transformed_stroke = []
+        for (x, y) in stroke:
+            new_x = glyph_mm_left + (x - left_skel) * scale_factor
+            new_y = glyph_mm_top - (y - top_skel) * scale_factor  # 注意 y 轴反转
+            transformed_stroke.append([new_x, new_y])
+        if transformed_stroke:
+            transformed_strokes.append(transformed_stroke)
+
+    return transformed_strokes
 
 def load_font(font_path, font_number=0):
     """
@@ -352,7 +497,7 @@ def load_font(font_path, font_number=0):
     else:
         return TTFont(font_path)
 
-def prepare_writing_robot_data(text, font_path, point_size, line_gap_adjust):
+def prepare_writing_robot_data(text, font_path, point_size, line_gap_adjust, allow_closed_paths=False, bool_skeletonize=False):
     """
     根据输入字符串、字体文件路径和目标字号（point），生成写字机器人数据，
     数据包含如下键：
@@ -419,7 +564,7 @@ def prepare_writing_robot_data(text, font_path, point_size, line_gap_adjust):
                 "left_side_bearing": 0,
                 "strokes": []
             }
-        elif ch == " " or ch == "　":
+        elif ch in [" ", "　"]:
             # 如果字符为空格，则不解析笔画
             adv = get_advance_width_in_mm(font, ch, point_size)
             lsb = get_left_side_bearing_in_mm(font, ch, point_size)
@@ -432,7 +577,13 @@ def prepare_writing_robot_data(text, font_path, point_size, line_gap_adjust):
         else:
             adv = get_advance_width_in_mm(font, ch, point_size)
             lsb = get_left_side_bearing_in_mm(font, ch, point_size)
-            strokes = get_stroke_points_in_mm(font, ch, point_size)
+            # 根据参数选择获取笔画的方式：
+            # 当 allow_closed_paths 和 bool_skeletonize 均为 True 时，使用骨架化方式获取笔画；
+            # 否则采用 RecordingPen 方式获取笔画。
+            if allow_closed_paths and bool_skeletonize:
+                strokes = get_skeletonized_stroke_points_in_mm(font_path, ch, point_size)
+            else:
+                strokes = get_stroke_points_in_mm(font, ch, point_size, allow_closed_paths)
             if strokes is None:
                 strokes = []
             char_item = {

@@ -70,11 +70,13 @@ def get_font_file():
     return None
 
 def on_font_selection(event=None):
-    """根据字体路径输入框更新全局变量 FONT_PATH"""
+    """根据字体路径输入框更新全局变量 FONT_PATH，并自动转换为绝对路径"""
     candidate = font_path_var.get()
+    candidate_abs = os.path.abspath(candidate)
     global FONT_PATH
-    if os.path.exists(candidate):
-        FONT_PATH = candidate
+    if os.path.exists(candidate_abs):
+        FONT_PATH = candidate_abs
+        font_path_var.set(candidate_abs)
 
 def browse_font():
     """点击浏览按钮后，允许用户手动选择字体文件"""
@@ -90,6 +92,14 @@ def browse_font():
 def on_custom_dimensions(event):
     """当用户手动修改页面大小时，将纸张预设切换为自定义"""
     paper_var.set("自定义")
+
+def on_contour_toggle():
+    """当‘轮廓字体’选项状态改变时，控制‘骨架化’选项的启用状态"""
+    if not contour_var.get():
+        skeleton_var.set(False)
+        cb_skeleton.config(state="disabled")
+    else:
+        cb_skeleton.config(state="normal")
 
 def on_json_export():
     """导出 JSON 按钮事件，调用 on_font_selection 检查字体选择，
@@ -121,8 +131,18 @@ def on_json_export():
         messagebox.showerror("字体错误", "未找到字体文件，请使用浏览按钮选择字体文件！")
         return
 
+    # 根据 UI 中的复选状态获取参数
+    allow_closed_paths = contour_var.get()
+    bool_skeletonize = skeleton_var.get()
+
     # 获取 JSON 字符串
-    segment_json_str = prepare_writing_robot_data(text_content, font_file, point_size, line_gap_adjust=line_gap_adjust)
+    # 获取 JSON 字符串，传入 allow_closed_paths 和 bool_skeletonize 参数
+    segment_json_str = prepare_writing_robot_data(
+        text_content, font_file, point_size,
+        line_gap_adjust=line_gap_adjust,
+        allow_closed_paths=allow_closed_paths,
+        bool_skeletonize=bool_skeletonize
+    )
     segment_data = json.loads(segment_json_str)
 
     out_data = {
@@ -198,8 +218,17 @@ def on_cdc_send():
         messagebox.showerror("字体错误", "未找到字体文件，请使用浏览按钮选择字体文件！")
         return
 
+    # 根据 UI 中的复选状态获取参数
+    allow_closed_paths = contour_var.get()
+    bool_skeletonize = skeleton_var.get()
+
     # 跟导出 JSON 的逻辑一致
-    segment_json_str = prepare_writing_robot_data(text_content, font_file, point_size, line_gap_adjust=line_gap_adjust)
+    segment_json_str = prepare_writing_robot_data(
+        text_content, font_file, point_size,
+        line_gap_adjust=line_gap_adjust,
+        allow_closed_paths=allow_closed_paths,
+        bool_skeletonize=bool_skeletonize
+    )
     segment_data = json.loads(segment_json_str)
     out_data = {
         "page_width": page_width,
@@ -288,7 +317,7 @@ ttk.Label(frame_font, text="字体大小(point):").grid(row=0, column=0, padx=5,
 font_size_var = tk.StringVar(value="24")
 entry_font_size = ttk.Entry(frame_font, textvariable=font_size_var, width=10)
 entry_font_size.grid(row=0, column=1, padx=5, pady=2, sticky="w")
-line_gap_adjust_var = tk.StringVar(value="500")
+line_gap_adjust_var = tk.StringVar(value="10")
 ttk.Label(frame_font, text="行距调整(point):").grid(row=1, column=0, padx=5, pady=2, sticky="e")
 line_gap_adjust_entry = ttk.Entry(frame_font, textvariable=line_gap_adjust_var, width=10)
 line_gap_adjust_entry.grid(row=1, column=1, padx=5, pady=2, sticky="w")
@@ -301,6 +330,17 @@ entry_font_path = ttk.Entry(frame_font_path, textvariable=font_path_var, width=4
 entry_font_path.grid(row=0, column=1, padx=5, pady=2, sticky="w")
 btn_browse = ttk.Button(frame_font_path, text="浏览", command=browse_font)
 btn_browse.grid(row=0, column=2, padx=5, pady=2)
+
+contour_var = tk.BooleanVar(value=False)   # 轮廓字体，对应 allow_closed_paths
+skeleton_var = tk.BooleanVar(value=False)  # 骨架化，对应 bool_skeletonize
+# 在 frame_font 建立后添加如下代码（例如在现有字体设置 Entry 之后）：
+cb_contour = ttk.Checkbutton(frame_font, text="轮廓字体", variable=contour_var, command=on_contour_toggle)
+cb_contour.grid(row=2, column=0, padx=5, pady=2, sticky="w")
+cb_skeleton = ttk.Checkbutton(frame_font, text="骨架化（实验性）", variable=skeleton_var)
+cb_skeleton.grid(row=2, column=1, padx=5, pady=2, sticky="w")
+# 初始时如果未勾选“轮廓字体”，禁用“骨架化”
+if not contour_var.get():
+    cb_skeleton.config(state="disabled")
 
 # 文本输入区
 frame_text = ttk.LabelFrame(root, text="输入文本")
