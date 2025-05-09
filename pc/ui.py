@@ -256,6 +256,7 @@ def on_cdc_send():
         "segments": [segment_data]
     }
     out_json = json.dumps(out_data, ensure_ascii=False, separators=(',',':'), sort_keys=False)
+    print(out_json)
 
     # 第一次使用时，从可用端口中选择
     if not cdc_selected_port:
