@@ -297,6 +297,9 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
       for (int i = jsonBufferIndex - *Len; i < jsonBufferIndex; i++) {
         char checkChar = jsonBuffer[i];
 
+        // CAUTION: we assume incoming data is valid json, so no check for that
+        //          we assume no interruption in the middle of a json message, so no timeout check
+
         // check if this is the beginning (this is the first chunk)
         if (!jsonStarted && checkChar == '{') {
           jsonStarted = true;
@@ -315,6 +318,8 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
 
         // check the count of braces (if the message is complete)
         if (braceCount == 0) {
+          // add null terminator to the end of the buffer
+          jsonBuffer[jsonBufferIndex] = '\0';
           // process the msg, with the length of the whole buffer
           processRpcRequest(jsonBuffer, jsonBufferIndex);
 
@@ -329,6 +334,11 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
   }
   else // buffer overflow, unlikely in our case honestly
   {
+    // Reset all state variables
+    jsonBufferIndex = 0;
+    jsonStarted = false;
+    braceCount = 0;
+
     //  error and thats it
     jsonBufferIndex = 0;
     const char *error = "{Buffer overflow}";
