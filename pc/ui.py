@@ -1,6 +1,6 @@
 import tkinter as tk
 import tkinter.font as tkfont
-from tkinter import ttk, messagebox, filedialog
+from tkinter import ttk, messagebox, filedialog, simpledialog
 import json
 import os
 from matplotlib import font_manager
@@ -8,7 +8,7 @@ import numpy as np
 
 # 引入已有的 prepare_writing_robot_data 函数
 from font_process import prepare_writing_robot_data
-from cdc import send_to_cdc, get_available_cdc_ports, listen_to_cdc
+from cdc import send_to_cdc, get_available_cdc_ports
 
 global root, paper_var, page_width_var, page_height_var, top_margin_var, bottom_margin_var
 global left_margin_var, right_margin_var, font_size_var, font_family_var, font_path_var
@@ -171,8 +171,6 @@ def on_json_export():
         except Exception as e:
             messagebox.showerror("保存错误", f"保存 JSON 文件时出错:\n{e}")
 
-# 新增全局变量，标识是否已启动 CDC 监听
-cdc_listener_started = False
 # 新增全局变量，保存用户选择的 CDC 端口（第一次选择后保持使用）
 cdc_selected_port = None
 
@@ -188,11 +186,30 @@ def cdc_data_handler(event_type, data):
     elif event_type == "closed":
         print("CDC 端口关闭:", data)
 
+class PortSelectionDialog(simpledialog.Dialog):
+    def __init__(self, parent, ports, title="选择 CDC 端口"):
+        self.ports = ports
+        self.selected_port = None
+        super().__init__(parent, title=title)
+
+    def body(self, master):
+        ttk.Label(master, text="请选择一个可用的 CDC 端口:").pack(padx=10, pady=10)
+        self.var = tk.StringVar()
+        self.combobox = ttk.Combobox(master, textvariable=self.var, values=self.ports, state='readonly')
+        self.combobox.pack(padx=10, pady=10)
+        if self.ports:
+            self.combobox.current(0)
+        return self.combobox
+
+    def apply(self):
+        self.selected_port = self.var.get()
+
 def on_cdc_send():
     """CDC 输出按钮事件，生成 JSON 数据（压缩成单行），再通过先前选择的 USB CDC 端口发送
-       第一次按下时调用 get_available_cdc_ports 让用户选择端口并启动监听，后续直接发送数据
+       第一次按下时调用 get_available_cdc_ports 让用户选择端口并启动监听，
+       发送失败后取消选择该端口。
     """
-    global cdc_listener_started, cdc_selected_port
+    global cdc_selected_port
     # 先更新字体路径
     on_font_selection(None)
     try:
@@ -222,7 +239,6 @@ def on_cdc_send():
     allow_closed_paths = contour_var.get()
     bool_skeletonize = skeleton_var.get()
 
-    # 跟导出 JSON 的逻辑一致
     segment_json_str = prepare_writing_robot_data(
         text_content, font_file, point_size,
         line_gap_adjust=line_gap_adjust,
@@ -237,33 +253,30 @@ def on_cdc_send():
         "bottom_margin": bottom_margin,
         "left_margin": left_margin,
         "right_margin": right_margin,
-        "segments": [
-            segment_data
-        ]
+        "segments": [segment_data]
     }
-    # 使用 separators 参数压缩为单行 JSON（不添加 indent 和空格）
     out_json = json.dumps(out_data, ensure_ascii=False, separators=(',',':'), sort_keys=False)
 
-    # 第一次使用时，调用 get_available_cdc_ports 让用户选择一个端口
+    # 第一次使用时，从可用端口中选择
     if not cdc_selected_port:
         ports = get_available_cdc_ports()
         if not ports:
             messagebox.showerror("端口选择", "没有检测到可用的 CDC 端口！")
             return
-        selected_port = filedialog.askstring("选择 CDC 端口", "请输入一个可用的CDC端口（例如，" + ", ".join(ports) + "）：")
+        dialog = PortSelectionDialog(root, ports, title="选择 CDC 端口")
+        selected_port = dialog.selected_port
         if not selected_port:
             messagebox.showerror("端口选择", "未选择 CDC 端口！")
             return
         cdc_selected_port = selected_port
-        # 启动监听（仅第一次调用时启动）
-        listen_to_cdc(cdc_selected_port, baudrate=9600, data_callback=cdc_data_handler)
-        cdc_listener_started = True
 
     success, msg = send_to_cdc(out_json, cdc_selected_port)
     if success:
         messagebox.showinfo("USB输出", msg)
     else:
         messagebox.showerror("USB输出错误", msg)
+        # 发送失败后取消已选择的端口
+        cdc_selected_port = None
 
 def on_exit():
     """退出应用"""

@@ -205,8 +205,8 @@ int main(void)
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET); // enable
   moveToXY(100, 0);
   moveToXY(-100, 0);
-  moveToXY(0, 100);
   moveToXY(0, -100);
+  moveToXY(0, 100);
   penup();
   pendown();
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET); // disable
