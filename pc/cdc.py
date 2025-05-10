@@ -1,6 +1,7 @@
 import serial
 from serial.tools import list_ports
 import time
+from datetime import datetime, timedelta
 
 def get_available_cdc_ports():
     """
@@ -30,7 +31,7 @@ def send_to_cdc(out_json, com_port, baudrate=9600):
         for i in range(0, total_len, segment_size):
             segment = data_bytes[i:i+segment_size]
             segments.append(segment)
-            print(segment)
+            # print(segment)
         
         # 若数据正好被32整除，则再追加一段全 "\0" 的段
         if total_len % segment_size == 0:
@@ -38,12 +39,16 @@ def send_to_cdc(out_json, com_port, baudrate=9600):
         
         # 分段发送，每段结束后延迟10ms
         for idx, seg in enumerate(segments):
-            print(seg)
+            # print(seg)
             ser.write(seg)
             print(ser.read_all().decode("utf-8", errors="replace"))
             if idx < len(segments) - 1:
                 time.sleep(0.01)
 
+        start_time = datetime.now()
+        duration = timedelta(seconds=0.5)
+        while datetime.now() - start_time < duration:
+             print(ser.read_all().decode("utf-8", errors="replace"))
         ser.close()
         return True, f"数据已通过 {com_port} 发送"
     except Exception as e:

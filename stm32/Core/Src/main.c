@@ -170,9 +170,9 @@ void processRpcRequest(uint8_t *buffer, uint16_t length);
 /* USER CODE END 0 */
 
 /**
-  * @brief  The application entry point.
-  * @retval int
-  */
+ * @brief  The application entry point.
+ * @retval int
+ */
 int main(void)
 {
 
@@ -219,6 +219,16 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+    if (writing)
+    {
+      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
+      // HAL_Delay(10000);
+      CDC_Transmit_FS(jsonBuffer, jsonBufferIndex);
+      processRpcRequest(jsonBuffer, jsonBufferIndex);
+      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
+      jsonBufferIndex = 0;
+      writing = false;
+    }
     if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0))
     {
       drawFu();
@@ -236,9 +246,9 @@ int main(void)
 }
 
 /**
-  * @brief System Clock Configuration
-  * @retval None
-  */
+ * @brief System Clock Configuration
+ * @retval None
+ */
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
@@ -246,8 +256,8 @@ void SystemClock_Config(void)
   RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
   /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
+   * in the RCC_OscInitTypeDef structure.
+   */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.HSEPredivValue = RCC_HSE_PREDIV_DIV1;
@@ -261,9 +271,8 @@ void SystemClock_Config(void)
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+   */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
@@ -282,10 +291,10 @@ void SystemClock_Config(void)
 }
 
 /**
-  * @brief TIM1 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief TIM1 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_TIM1_Init(void)
 {
 
@@ -353,14 +362,13 @@ static void MX_TIM1_Init(void)
 
   /* USER CODE END TIM1_Init 2 */
   HAL_TIM_MspPostInit(&htim1);
-
 }
 
 /**
-  * @brief TIM2 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief TIM2 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_TIM2_Init(void)
 {
 
@@ -416,14 +424,13 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 2 */
   HAL_TIM_MspPostInit(&htim2);
-
 }
 
 /**
-  * @brief GPIO Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief GPIO Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -438,8 +445,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_10|GPIO_PIN_12
-                          |GPIO_PIN_5|GPIO_PIN_9, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_10 | GPIO_PIN_12 | GPIO_PIN_5 | GPIO_PIN_9, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET);
@@ -461,8 +467,7 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pins : PB0 PB1 PB10 PB12
                            PB5 PB9 */
-  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_10|GPIO_PIN_12
-                          |GPIO_PIN_5|GPIO_PIN_9;
+  GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_10 | GPIO_PIN_12 | GPIO_PIN_5 | GPIO_PIN_9;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -1011,11 +1016,13 @@ void updateGlobalXY(float delta_X, float delta_Y)
 
 void drawDocument(struct Document *document)
 {
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_RESET);
   // set the starting position at the top left corner of the page
   float Global_X = document->left_margin;
   float Global_Y = -(document->top_margin);
-  float scale = 0.2; // 1 step = 0.2 mm
+  float scale = 5; // 1 step = 0.2 mm
 
+  penup();
   // iterate through each segment in the document
   for (int i = 0; i < document->segmentCount; i++)
   {
@@ -1067,6 +1074,8 @@ void drawSegment(struct Segment *segment, float *Global_X,
 
 void drawCharacter(struct Character *character, float startX, float startY, float scale)
 {
+  HAL_Delay(500);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_SET);
   // get the relative starting position of the character
   float CharStartX = startX + character->left_side_bearing;
 
@@ -1286,7 +1295,7 @@ bool initCharacter(struct Character *character, bool is_line_feed,
   return true;
 }
 
-bool initStroke(struct Stroke * stroke, struct Point *points,
+bool initStroke(struct Stroke *stroke, struct Point *points,
                 int pointCount)
 {
   if (stroke == NULL)
@@ -1524,6 +1533,7 @@ bool parseDocument(struct Document *document, cJSON *json)
 
   int segmentCount = cJSON_GetArraySize(raw_segments);
   struct Segment *segments = (struct Segment *)malloc(sizeof(struct Segment) * segmentCount);
+  // 以下可能有问题
   for (int i = 0; i < segmentCount; i++)
   {
     // 获取每个 segment 对象
@@ -1538,6 +1548,11 @@ bool parseDocument(struct Document *document, cJSON *json)
       {
         return false;
       }
+    }
+    else
+    {
+      HAL_Delay(500);
+      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
     }
     // 使用后释放内存
     cJSON_Delete(new_seg_json);
@@ -1693,6 +1708,7 @@ bool parseCharacter(struct Character *character, cJSON *json)
 // RPC 处理函数，解析收到的 JSON 数据并绘制文档
 void processRpcRequest(uint8_t *buffer, uint16_t length)
 {
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
   // 动态分配缓冲区，确保能够保存整个数据并以 '\0' 结尾
   char *json_data = (char *)malloc(length + 1);
   if (json_data == NULL)
@@ -1730,8 +1746,11 @@ void processRpcRequest(uint8_t *buffer, uint16_t length)
     return;
   }
 
+  CDC_Transmit_FS(buffer, length);
   // 调用绘制函数，开始绘制文档（你的 drawDocument() 已定义）
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET); // enable
   drawDocument(document);
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET); // disable
 
   // 绘制完成后释放内存（注意本示例中可能需要在实际工程中完善内存管理）
   freeAllData(document);
@@ -1743,9 +1762,9 @@ void processRpcRequest(uint8_t *buffer, uint16_t length)
 /* USER CODE END 4 */
 
 /**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
+ * @brief  This function is executed in case of error occurrence.
+ * @retval None
+ */
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
@@ -1757,14 +1776,14 @@ void Error_Handler(void)
   /* USER CODE END Error_Handler_Debug */
 }
 
-#ifdef  USE_FULL_ASSERT
+#ifdef USE_FULL_ASSERT
 /**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
+ * @brief  Reports the name of the source file and the source line number
+ *         where the assert_param error has occurred.
+ * @param  file: pointer to the source file name
+ * @param  line: assert_param error line source number
+ * @retval None
+ */
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */

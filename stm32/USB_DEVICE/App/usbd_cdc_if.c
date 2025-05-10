@@ -50,7 +50,7 @@
   */
 
 /* USER CODE BEGIN PRIVATE_TYPES */
-
+bool writing = false;
 /* USER CODE END PRIVATE_TYPES */
 
 /**
@@ -64,10 +64,7 @@
 
 /* USER CODE BEGIN PRIVATE_DEFINES */
 
-// ANCHOR
-#define MAX_JSON_SIZE 16384
-#define SEGMENT_SIZE 32
-#define JSON_TIMEOUT 100 // 毫秒，若需要可用超时机制
+// 放到了 usbd_cdc_if.h 里
 
 /* USER CODE END PRIVATE_DEFINES */
 
@@ -103,8 +100,8 @@ uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
 /* USER CODE BEGIN PRIVATE_VARIABLES */
 
 // ANCHOR
-static uint8_t jsonBuffer[MAX_JSON_SIZE];
-static int32_t jsonBufferIndex = 0; // current position where to write the next data
+uint8_t jsonBuffer[MAX_JSON_SIZE];
+int32_t jsonBufferIndex = 0; // current position where to write the next data
 static bool jsonReceiving = false;
 
 /* USER CODE END PRIVATE_VARIABLES */
@@ -278,8 +275,10 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
   // HAL_Delay(1);
   // HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
 
-  uint32_t currentTick = HAL_GetTick();
-
+  if (writing)
+  {
+    return USBD_OK;
+  }
   if (!jsonReceiving)
   {
     jsonReceiving = true;
@@ -317,15 +316,15 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
     // 添加结束符（如果空间允许）
     if (jsonBufferIndex < MAX_JSON_SIZE)
       jsonBuffer[jsonBufferIndex] = '\0';
-    // 以下这段可能会有很大问题
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
-    HAL_Delay(1000);
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
-    // 发送并处理完整数据
-    CDC_Transmit_FS(jsonBuffer, jsonBufferIndex);
-    processRpcRequest(jsonBuffer, jsonBufferIndex);
-    // 重置状态
-    jsonBufferIndex = 0;
+    // // 以下这段可能会有很大问题
+    // HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
+    // HAL_Delay(1000);
+    // HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
+    // // 发送并处理完整数据
+    // processRpcRequest(jsonBuffer, jsonBufferIndex);
+    // 修改状态
+    writing = true;
+    // CDC_Transmit_FS(jsonBuffer, jsonBufferIndex);
     jsonReceiving = false;
   }
 
