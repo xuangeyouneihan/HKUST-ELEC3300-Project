@@ -298,11 +298,13 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
       memcpy(infoBuffer + infoBufferIndex, Buf, *Len);
       infoBufferIndex += *Len;
     }
-    else
+    else // Anchor
     {
       // infoBuffer 溢出，重置状态
       infoBufferIndex = 0;
       infoReceived = false;
+      charBufferIndex = 0;  // Fix?
+      charReceived = false; // Fix? : cahrReceived was never reset in overflow
       const char *error = "{Buffer overflow}";
       CDC_Transmit_FS((uint8_t *)error, strlen(error));
       goto prepare_next;
@@ -332,11 +334,13 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
       memcpy(charBuffer + charBufferIndex, Buf, *Len);
       charBufferIndex += *Len;
     }
-    else
+    else // Anchor
     {
       // charBuffer 溢出，重置状态
       charBufferIndex = 0;
       charReceived = false;
+      infoBufferIndex = 0;  // Fix?
+      infoReceived = false; // Fix? : infoReceived was never reset in overflow
       const char *error = "{Buffer overflow}";
       CDC_Transmit_FS((uint8_t *)error, strlen(error));
       goto prepare_next;
@@ -354,12 +358,15 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
       char signal[(*Len) + 1];
       memcpy(signal, Buf, *Len);
       signal[*Len] = '\0';
-      if (strcmp(signal, FINISH) == 0)
+      if (strcmp(signal, FINISH) == 0) // Anchor
       {
         infoReceived = false;
+        charReceived = false; // Fix? : cahrReceived was never reset after FINISH flag
+        charBufferIndex = 0;  // Fix?
+        infoBufferIndex = 0;  // Fix?
       }
       // 对方接下来会发送下一个 character 数据
-      // 添加结束符（如果空间允许）
+      // 添加结束符（如果空间允许）w
       if (charBufferIndex < MAX_CHAR_SIZE)
         charBuffer[charBufferIndex] = '\0';
       charReceived = true;
