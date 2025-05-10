@@ -232,7 +232,7 @@ int main(void)
     if (!infoReceived && currentDoc != NULL)
     {
       freeAllData(currentDoc);
-      currentDoc == NULL;
+      currentDoc = NULL;
       charBufferIndex = 0;
       infoBufferIndex = 0;
       Global_X = 0;

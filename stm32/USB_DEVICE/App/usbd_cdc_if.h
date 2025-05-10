@@ -103,12 +103,12 @@ extern USBD_CDC_ItfTypeDef USBD_Interface_fops_FS;
 // extern uint8_t jsonBuffer[MAX_JSON_SIZE];
 // extern int32_t jsonBufferIndex;
 // extern bool writing;
-uint8_t infoBuffer[MAX_INFO_SIZE];
-int32_t infoBufferIndex;
-uint8_t charBuffer[MAX_CHAR_SIZE];
-int32_t charBufferIndex;
-bool infoReceived; // 当收到 infoBuffer 完整数据后置 true
-bool charReceived; // 当收到 charBuffer 完整数据后置 true
+extern uint8_t infoBuffer[MAX_INFO_SIZE];
+extern int32_t infoBufferIndex;
+extern uint8_t charBuffer[MAX_CHAR_SIZE];
+extern int32_t charBufferIndex;
+extern bool infoReceived; // 当收到 infoBuffer 完整数据后置 true
+extern bool charReceived; // 当收到 charBuffer 完整数据后置 true
 /* USER CODE END EXPORTED_VARIABLES */
 
 /**
