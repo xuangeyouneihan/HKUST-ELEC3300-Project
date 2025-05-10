@@ -594,10 +594,10 @@ def prepare_writing_robot_data(text, font_path, point_size, line_gap_adjust, all
             }
         data["characters"].append(char_item)
     
-    # 辅助函数：递归遍历，所有浮点数只保留3位小数
+    # 辅助函数：递归遍历，所有浮点数只保留1位小数
     def round_floats(obj):
         if isinstance(obj, float):
-            return round(obj, 3)
+            return round(obj, 1)
         elif isinstance(obj, dict):
             return {k: round_floats(v) for k, v in obj.items()}
         elif isinstance(obj, list):
