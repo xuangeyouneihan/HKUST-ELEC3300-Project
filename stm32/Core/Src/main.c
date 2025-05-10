@@ -228,7 +228,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    // 写字结束
+    // 写字结束 // Anchor
     if (!infoReceived && currentDoc != NULL)
     {
       freeAllData(currentDoc);
@@ -239,6 +239,7 @@ int main(void)
       Global_Y = 0;
       Doc_Global_X = 0;
       Doc_Global_Y = 0;
+      charReceived = false; // Fix? : cahrReceived was never reset
       HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET); // disable
     }
     // 刚接收完 info
@@ -891,6 +892,7 @@ void legacyMove(uint8_t direction, uint32_t time, uint8_t draw)
 // Quick search:
 // TODO; CAUTION; PROBLEM
 // WARNING; BAD
+// Update; Fix?
 //
 
 //
