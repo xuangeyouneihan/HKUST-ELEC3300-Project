@@ -100,9 +100,16 @@ uint8_t UserTxBufferFS[APP_TX_DATA_SIZE];
 /* USER CODE BEGIN PRIVATE_VARIABLES */
 
 // ANCHOR
-uint8_t jsonBuffer[MAX_JSON_SIZE];
-int32_t jsonBufferIndex = 0; // current position where to write the next data
-static bool jsonReceiving = false;
+// uint8_t jsonBuffer[MAX_JSON_SIZE];
+// int32_t jsonBufferIndex = 0; // current position where to write the next data
+// static bool jsonReceiving = false;
+
+uint8_t infoBuffer[MAX_INFO_SIZE];
+int32_t infoBufferIndex = 0;
+uint8_t charBuffer[MAX_CHAR_SIZE];
+int32_t charBufferIndex = 0;
+bool infoReceived = false; // 当收到 infoBuffer 完整数据后置 true
+bool charReceived = false; // 当收到 charBuffer 完整数据后置 true
 
 /* USER CODE END PRIVATE_VARIABLES */
 
@@ -275,65 +282,157 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
   // HAL_Delay(1);
   // HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
 
-  if (writing)
+  // 如果正在进行写操作，则不处理新数据
+  if (infoReceived && charReceived)
   {
     return USBD_OK;
   }
-  if (!jsonReceiving)
-  {
-    jsonReceiving = true;
-  }
-  // 更新最后一次接收时间（超时判断可在后台任务中使用）
-  // lastPacketTick = currentTick;  // 如果需要超时机制，可用全局变量保存
 
-  // 将接收到的数据追加到全局 jsonBuffer 中
-  if (jsonBufferIndex + *Len < MAX_JSON_SIZE)
+  // 正常检查缓冲区空间（此处使用 MAX_JSON_SIZE 作为上限）
+  // 注意：这里只做简化示例，实际情况请考虑分开 infoBuffer 与 charBuffer 的错误处理
+  if (!infoReceived)
   {
-    memcpy(jsonBuffer + jsonBufferIndex, Buf, *Len);
-    jsonBufferIndex += *Len;
+    // 处于 infoBuffer 收集阶段
+    if (infoBufferIndex + *Len < MAX_INFO_SIZE)
+    {
+      memcpy(infoBuffer + infoBufferIndex, Buf, *Len);
+      infoBufferIndex += *Len;
+    }
+    else
+    {
+      // infoBuffer 溢出，重置状态
+      infoBufferIndex = 0;
+      infoReceived = false;
+      const char *error = "{Buffer overflow}";
+      CDC_Transmit_FS((uint8_t *)error, strlen(error));
+      goto prepare_next;
+    }
+    // 判断是否为终止段（长度不足 SEGMENT_SIZE）
+    if ((*Len) < SEGMENT_SIZE)
+    {
+      // 如果终止段的首个字节为 '\0'
+      // 则认为该段无有效数据，所以不必重复追加（取消这部分数据）
+      if (Buf[0] == 0)
+      {
+        // 撤销这段追加的数据：将 infoBufferIndex 回退
+        infoBufferIndex -= *Len;
+      }
+      // 对方接下来会发送 characters 数据
+      // 添加结束符（如果空间允许）
+      if (infoBufferIndex < MAX_INFO_SIZE)
+        infoBuffer[infoBufferIndex] = '\0';
+      infoReceived = true;
+    }
   }
   else
   {
-    // 若缓冲区溢出，则重置状态
-    jsonBufferIndex = 0;
-    jsonReceiving = false;
-    const char *error = "{Buffer overflow}";
-    CDC_Transmit_FS((uint8_t *)error, strlen(error));
-    goto prepare_next;
-  }
-
-  // 判断当前段是否为终止段
-  // 条件: 当前段不足32字节（说明是最后一段）
-  if ((*Len) < SEGMENT_SIZE)
-  {
-    // 如果终止段的首个字节为 '\0'
-    // 则认为该段无有效数据，所以不必重复追加（取消这部分数据）
-    if (Buf[0] == 0)
+    // 处于接收 characters 数据阶段
+    if (charBufferIndex + *Len < MAX_CHAR_SIZE)
     {
-      // 撤销这段追加的数据：将 jsonBufferIndex 回退
-      jsonBufferIndex -= *Len;
+      memcpy(charBuffer + charBufferIndex, Buf, *Len);
+      charBufferIndex += *Len;
     }
-    // 添加结束符（如果空间允许）
-    if (jsonBufferIndex < MAX_JSON_SIZE)
-      jsonBuffer[jsonBufferIndex] = '\0';
-    // // 以下这段可能会有很大问题
-    // HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
-    // HAL_Delay(1000);
-    // HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
-    // // 发送并处理完整数据
-    // processRpcRequest(jsonBuffer, jsonBufferIndex);
-    // 修改状态
-    writing = true;
-    // CDC_Transmit_FS(jsonBuffer, jsonBufferIndex);
-    jsonReceiving = false;
+    else
+    {
+      // charBuffer 溢出，重置状态
+      charBufferIndex = 0;
+      charReceived = false;
+      const char *error = "{Buffer overflow}";
+      CDC_Transmit_FS((uint8_t *)error, strlen(error));
+      goto prepare_next;
+    }
+    // 判断是否为终止段（长度不足 SEGMENT_SIZE）
+    if ((*Len) < SEGMENT_SIZE)
+    {
+      // 如果终止段的首个字节为 '\0'
+      // 则认为该段无有效数据，所以不必重复追加（取消这部分数据）
+      if (Buf[0] == 0)
+      {
+        // 撤销这段追加的数据：将 charBufferIndex 回退
+        charBufferIndex -= *Len;
+      }
+      char signal[(*Len) + 1];
+      memcpy(signal, Buf, *Len);
+      signal[*Len] = '\0';
+      if (strcmp(signal, FINISH) == 0)
+      {
+        infoReceived = false;
+      }
+      // 对方接下来会发送下一个 character 数据
+      // 添加结束符（如果空间允许）
+      if (charBufferIndex < MAX_CHAR_SIZE)
+        charBuffer[charBufferIndex] = '\0';
+      charReceived = true;
+    }
   }
 
 prepare_next:
   // 准备接收下一数据块
   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, Buf);
   USBD_CDC_ReceivePacket(&hUsbDeviceFS);
-  CDC_Transmit_FS(jsonBuffer, jsonBufferIndex);
+  // 此处可选择发送当前状态或缓冲区内容用于调试
+  // CDC_Transmit_FS(jsonBuffer, infoBufferIndex);
   return USBD_OK;
+
+  // if (writing)
+  // {
+  //   return USBD_OK;
+  // }
+  // if (!jsonReceiving)
+  // {
+  //   jsonReceiving = true;
+  // }
+  // // 更新最后一次接收时间（超时判断可在后台任务中使用）
+  // // lastPacketTick = currentTick;  // 如果需要超时机制，可用全局变量保存
+
+  // // 将接收到的数据追加到全局 jsonBuffer 中
+  // if (jsonBufferIndex + *Len < MAX_JSON_SIZE)
+  // {
+  //   memcpy(jsonBuffer + jsonBufferIndex, Buf, *Len);
+  //   jsonBufferIndex += *Len;
+  // }
+  // else
+  // {
+  //   // 若缓冲区溢出，则重置状态
+  //   jsonBufferIndex = 0;
+  //   jsonReceiving = false;
+  //   const char *error = "{Buffer overflow}";
+  //   CDC_Transmit_FS((uint8_t *)error, strlen(error));
+  //   goto prepare_next;
+  // }
+
+  // // 判断当前段是否为终止段
+  // // 条件: 当前段不足32字节（说明是最后一段）
+  // if ((*Len) < SEGMENT_SIZE)
+  // {
+  //   // 如果终止段的首个字节为 '\0'
+  //   // 则认为该段无有效数据，所以不必重复追加（取消这部分数据）
+  //   if (Buf[0] == 0)
+  //   {
+  //     // 撤销这段追加的数据：将 jsonBufferIndex 回退
+  //     jsonBufferIndex -= *Len;
+  //   }
+  //   // 添加结束符（如果空间允许）
+  //   if (jsonBufferIndex < MAX_JSON_SIZE)
+  //     jsonBuffer[jsonBufferIndex] = '\0';
+  //   // // 以下这段可能会有很大问题
+  //   // HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
+  //   // HAL_Delay(1000);
+  //   // HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
+  //   // // 发送并处理完整数据
+  //   // processRpcRequest(jsonBuffer, jsonBufferIndex);
+  //   // 修改状态
+  //   writing = true;
+  //   // CDC_Transmit_FS(jsonBuffer, jsonBufferIndex);
+  //   jsonReceiving = false;
+  // }
+
+// prepare_next:
+//   // 准备接收下一数据块
+//   USBD_CDC_SetRxBuffer(&hUsbDeviceFS, Buf);
+//   USBD_CDC_ReceivePacket(&hUsbDeviceFS);
+//   CDC_Transmit_FS(jsonBuffer, jsonBufferIndex);
+//   return USBD_OK;
   /* USER CODE END 6 */
 }
 

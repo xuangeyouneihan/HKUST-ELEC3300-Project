@@ -55,6 +55,10 @@
 #define MAX_JSON_SIZE 16384
 #define SEGMENT_SIZE 32
 #define JSON_TIMEOUT 100
+#define MAX_INFO_SIZE 256
+#define MAX_CHAR_SIZE 1024
+#define READY "114514"
+#define FINISH "1919810"
 /* USER CODE END EXPORTED_DEFINES */
 
 /**
@@ -96,9 +100,15 @@
 extern USBD_CDC_ItfTypeDef USBD_Interface_fops_FS;
 
 /* USER CODE BEGIN EXPORTED_VARIABLES */
-extern uint8_t jsonBuffer[MAX_JSON_SIZE];
-extern int32_t jsonBufferIndex;
-extern bool writing;
+// extern uint8_t jsonBuffer[MAX_JSON_SIZE];
+// extern int32_t jsonBufferIndex;
+// extern bool writing;
+uint8_t infoBuffer[MAX_INFO_SIZE];
+int32_t infoBufferIndex;
+uint8_t charBuffer[MAX_CHAR_SIZE];
+int32_t charBufferIndex;
+bool infoReceived; // 当收到 infoBuffer 完整数据后置 true
+bool charReceived; // 当收到 charBuffer 完整数据后置 true
 /* USER CODE END EXPORTED_VARIABLES */
 
 /**

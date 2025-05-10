@@ -119,6 +119,13 @@ int32_t Global_Y = 0;
 // int32_t Relative_X = 0;
 // int32_t Relative_Y = 0;
 
+struct Document *currentDoc = NULL;
+struct Character *currentChar = NULL;
+
+float Doc_Global_X = 0;
+float Doc_Global_Y = 0;
+float scale = 5;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -161,6 +168,8 @@ void drawRegularPentagon();
 bool parseDocument(struct Document *document, cJSON *json);
 bool parseSegment(struct Segment *segment, cJSON *json);
 bool parseCharacter(struct Character *character, cJSON *json);
+void processInfo(uint8_t *buffer, uint16_t length);
+void processChar(uint8_t *buffer, uint16_t length);
 void processRpcRequest(uint8_t *buffer, uint16_t length);
 /* USER CODE END PFP */
 
@@ -219,15 +228,56 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    if (writing)
+    // 写字结束
+    if (!infoReceived && currentDoc != NULL)
     {
-      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
-      // HAL_Delay(10000);
-      CDC_Transmit_FS(jsonBuffer, jsonBufferIndex);
-      processRpcRequest(jsonBuffer, jsonBufferIndex);
-      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET);
-      jsonBufferIndex = 0;
-      writing = false;
+      freeAllData(currentDoc);
+      currentDoc == NULL;
+      charBufferIndex = 0;
+      infoBufferIndex = 0;
+      Global_X = 0;
+      Global_Y = 0;
+      Doc_Global_X = 0;
+      Doc_Global_Y = 0;
+      HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET); // disable
+    }
+    // 刚接收完 info
+    if (infoReceived && currentDoc == NULL && !charReceived)
+    {
+      processInfo(infoBuffer, infoBufferIndex);
+      HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET); // enable
+      // 以下仿照 drawDocuments 函数
+      Doc_Global_X = currentDoc->left_margin;
+      Doc_Global_Y = -(currentDoc->top_margin);
+      penup();
+      charBufferIndex = 0;
+      CDC_Transmit_FS(READY, 6);
+    }
+    // 刚接收完 char
+    if (infoReceived && currentDoc != NULL && charReceived && currentChar == NULL)
+    {
+      processChar(charBuffer, charBufferIndex);
+      charBufferIndex = 0;
+      // 以下仿照 drawSegments 函数
+      Doc_Global_Y -= currentDoc->segments[0].ascender;
+      // 超出右边距或者字符是回车，换行
+      if (Doc_Global_X + currentChar->advance_width >= currentDoc->page_width - currentDoc->right_margin || currentChar->is_line_feed)
+      {
+        Doc_Global_X = currentDoc->left_margin;
+        Doc_Global_Y -= (currentDoc->segments[0].ascender + currentDoc->segments[0].descender + currentDoc->segments[0].line_gap);
+      }
+      // 超出右边距也不能吞字
+      if (!(currentChar->is_line_feed))
+      {
+        drawCharacter(currentChar, Doc_Global_X, Doc_Global_Y, scale);
+        Doc_Global_X += currentChar->advance_width;
+      }
+      Doc_Global_Y += currentDoc->segments[0].ascender;
+      // TODO: detect if the current position exceeds the bottom edge
+      freeCharacter(currentChar);
+      currentChar = NULL;
+      charReceived = false;
+      CDC_Transmit_FS(READY, 6);
     }
     if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0))
     {
@@ -1706,6 +1756,88 @@ bool parseCharacter(struct Character *character, cJSON *json)
   }
 
   return true;
+}
+
+void processInfo(uint8_t *buffer, uint16_t length)
+{
+  // 动态分配缓冲区，确保能够保存整个数据并以 '\0' 结尾
+  char *info_data = (char *)malloc(length + 1);
+  if (info_data == NULL)
+  {
+    const char *error_response = "{\"error\":\"内存分配失败\"}";
+    CDC_Transmit_FS((uint8_t *)error_response, strlen(error_response));
+    return;
+  }
+  memcpy(info_data, buffer, length);
+  info_data[length] = '\0';
+
+  cJSON *info_root = cJSON_Parse(info_data);
+  free(info_data); // 解析后释放动态分配的内存
+
+  if (info_root == NULL)
+  {
+    const char *error_response = "{\"error\":\"JSON解析失败\"}";
+    CDC_Transmit_FS((uint8_t *)error_response, strlen(error_response));
+    return;
+  }
+
+  // 解析 Document 结构（包括页面参数、segments 等）
+  currentDoc = (struct Document *)malloc(sizeof(struct Document));
+  if (currentDoc == NULL)
+  {
+    const char *error_response = "{\"error\":\"内存分配失败\"}";
+    CDC_Transmit_FS((uint8_t *)error_response, strlen(error_response));
+    cJSON_Delete(info_root);
+    return;
+  }
+  if (!parseDocument(currentDoc, info_root))
+  {
+    const char *error_response = "{\"error\":\"解析Document失败\"}";
+    CDC_Transmit_FS((uint8_t *)error_response, strlen(error_response));
+    cJSON_Delete(info_root);
+    return;
+  }
+}
+
+void processChar(uint8_t *buffer, uint16_t length)
+{
+  // 动态分配缓冲区，确保能够保存整个数据并以 '\0' 结尾
+  char *char_data = (char *)malloc(length + 1);
+  if (char_data == NULL)
+  {
+    const char *error_response = "{\"error\":\"内存分配失败\"}";
+    CDC_Transmit_FS((uint8_t *)error_response, strlen(error_response));
+    return;
+  }
+  memcpy(char_data, buffer, length);
+  char_data[length] = '\0';
+
+  cJSON *char_root = cJSON_Parse(char_data);
+  free(char_data); // 解析后释放动态分配的内存
+
+  if (char_root == NULL)
+  {
+    const char *error_response = "{\"error\":\"JSON解析失败\"}";
+    CDC_Transmit_FS((uint8_t *)error_response, strlen(error_response));
+    return;
+  }
+
+  // 解析 Character 结构（包括 strokes、points 等）
+  currentChar = (struct Character *)malloc(sizeof(struct Character));
+  if (currentDoc == NULL)
+  {
+    const char *error_response = "{\"error\":\"内存分配失败\"}";
+    CDC_Transmit_FS((uint8_t *)error_response, strlen(error_response));
+    cJSON_Delete(char_root);
+    return;
+  }
+  if (!parseCharacter(currentChar, char_root))
+  {
+    const char *error_response = "{\"error\":\"解析Document失败\"}";
+    CDC_Transmit_FS((uint8_t *)error_response, strlen(error_response));
+    cJSON_Delete(char_root);
+    return;
+  }
 }
 
 // RPC 处理函数，解析收到的 JSON 数据并绘制文档
