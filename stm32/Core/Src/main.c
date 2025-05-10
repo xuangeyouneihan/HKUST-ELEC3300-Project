@@ -254,7 +254,7 @@ int main(void)
       CDC_Transmit_FS(READY, 6);
     }
     // 刚接收完 char
-    if (infoReceived && currentDoc != NULL && charReceived && currentChar == NULL)
+    if (infoReceived && currentDoc != NULL && charReceived)
     {
       processChar(charBuffer, charBufferIndex);
       charBufferIndex = 0;

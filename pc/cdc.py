@@ -22,13 +22,13 @@ def send_in_segments(data_bytes, ser, segment_size=32, delay=0.01):
         segment = data_bytes[i:i+segment_size]
         segments.append(segment)
     if total_len % segment_size == 0:
-        segments.append(b'\0' * segment_size)
+        segments.append(b'\0')
     for idx, seg in enumerate(segments):
         ser.write(seg)
-        # 打印当前发送段后的回传信息（调试用）
-        resp = ser.read_all().decode("utf-8", errors="replace")
-        if resp:
-            print("发送段后回传:", resp)
+        # # 打印当前发送段后的回传信息（调试用）
+        # resp = ser.read_all().decode("utf-8", errors="replace")
+        # if resp:
+        #     print("发送段后回传:", resp)
         if idx < len(segments) - 1:
             time.sleep(delay)
 
@@ -60,6 +60,7 @@ def send_to_cdc(out_json, com_port, baudrate=9600):
         ser = serial.Serial(port=com_port, baudrate=baudrate, timeout=1)
         # 解析原始 JSON 数据
         original_data = json.loads(out_json)
+        characters = original_data.get("segments", [{}])[0].get("characters", [])
         # 制作初始消息：将 segments 内 characters 数组置空
         modified_data = original_data.copy()
         if "segments" in modified_data and len(modified_data["segments"]) > 0:
@@ -71,76 +72,26 @@ def send_to_cdc(out_json, com_port, baudrate=9600):
         data_bytes = init_json.encode("utf-8")
         send_in_segments(data_bytes, ser, segment_size=32, delay=0.01)
         # 发送初始消息后等待对方发送 "114514" 信号，再开始发送第1个 character
-        print("已发送初始消息，等待 '114514' 信号以开始发送第1个 character ...")
+        print("已发送初始消息，等待 '114514' 信号以开始发送第 1 个 character ...")
         wait_for_signal(ser, "114514", timeout=None)
         
         # 直接进入发送每个 character 的流程
-        characters = original_data.get("segments", [{}])[0].get("characters", [])
         for idx, char_item in enumerate(characters):
-            # 构造只含当前 character 的 JSON 消息
-            temp_data = modified_data.copy()
-            # 深拷贝 segments 子项
-            temp_data["segments"] = [modified_data["segments"][0].copy()]
-            temp_data["segments"][0]["characters"] = [char_item]
-            temp_json = json.dumps(temp_data, ensure_ascii=False, separators=(',',':'))
-            data_bytes = temp_json.encode("utf-8")
+            json_message = json.dumps(char_item, ensure_ascii=False, separators=(',',':'))
+            # print(json_message)
+            data_bytes = json_message.encode("utf-8")
             send_in_segments(data_bytes, ser, segment_size=32, delay=0.01)
             # 发送完当前 character 后，等待对方传来"114514"以继续
             print(f"已发送第 {idx+1} 个character，等待 '114514' 信号以继续...")
             wait_for_signal(ser, "114514", timeout=None)
         
-        # 发送完所有 character 后，再等待一次 "114514"
-        print("所有 character 已发送，等待 '114514' 信号以结束写字...")
-        if wait_for_signal(ser, "114514", timeout=5):
-            end_msg = "1919810"
-            end_bytes = end_msg.encode("utf-8")
-            send_in_segments(end_bytes, ser, segment_size=32, delay=0.01)
+        # 发送完所有 character 后，发送 "1919810" 信号以结束写字
+        print("所有 character 已发送，发送 '1919810' 信号以结束写字...")
+        end_msg = "1919810"
+        end_bytes = end_msg.encode("utf-8")
+        send_in_segments(end_bytes, ser, segment_size=32, delay=0.01)
         
         ser.close()
         return True, f"数据已通过 {com_port} 发送"
     except Exception as e:
         return False, f"发送数据到 {com_port} 时出错: {e}"
-
-# def send_to_cdc(out_json, com_port, baudrate=9600):
-#     """
-#     通过指定的 USB CDC 端口发送 JSON 数据，每段大小均为32字节，
-#     末段若不够32字节后面用 "\0" 填全，若末段大小恰好为32字节则再追加
-#     一个全是 "\0" 的32字节段。发完一段延迟10ms再发送下一段。
-    
-#     同时读取并打印 CDC 设备的回传值。
-    
-#     返回 (success, message) tuple
-#     """
-#     try:
-#         ser = serial.Serial(port=com_port, baudrate=baudrate, timeout=1)
-#         data_bytes = out_json.encode("utf-8")
-#         segment_size = 32
-#         segments = []
-#         total_len = len(data_bytes)
-        
-#         # 分段
-#         for i in range(0, total_len, segment_size):
-#             segment = data_bytes[i:i+segment_size]
-#             segments.append(segment)
-#             # print(segment)
-        
-#         # 若数据正好被32整除，则再追加一段全 "\0" 的段
-#         if total_len % segment_size == 0:
-#             segments.append(b'\0')
-        
-#         # 分段发送，每段结束后延迟10ms
-#         for idx, seg in enumerate(segments):
-#             # print(seg)
-#             ser.write(seg)
-#             print(ser.read_all().decode("utf-8", errors="replace"))
-#             if idx < len(segments) - 1:
-#                 time.sleep(0.01)
-
-#         start_time = datetime.now()
-#         duration = timedelta(seconds=0.5)
-#         while datetime.now() - start_time < duration:
-#              print(ser.read_all().decode("utf-8", errors="replace"))
-#         ser.close()
-#         return True, f"数据已通过 {com_port} 发送"
-#     except Exception as e:
-#         return False, f"发送数据到 {com_port} 时出错: {e}"
