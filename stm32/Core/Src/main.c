@@ -1539,12 +1539,12 @@ bool parseDocument(struct Document *document, cJSON *json)
     // 获取每个 segment 对象
     cJSON *seg_item = cJSON_GetArrayItem(raw_segments, i);
     // 对该 segment 深拷贝（递归拷贝所有子项）
-    cJSON *new_seg_json = cJSON_Duplicate(seg_item, 1);
-    if (new_seg_json != NULL)
+    // cJSON *new_seg_json = cJSON_Duplicate(seg_item, 1);
+    if (seg_item != NULL)
     {
       // new_seg_json 就是一个独立的新的 JSON 对象
       // 这里可以传给其它函数处理，比如：
-      if (!parseSegment(&segments[i], new_seg_json))
+      if (!parseSegment(&segments[i], seg_item))
       {
         return false;
       }
@@ -1555,7 +1555,7 @@ bool parseDocument(struct Document *document, cJSON *json)
       HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
     }
     // 使用后释放内存
-    cJSON_Delete(new_seg_json);
+    // cJSON_Delete(new_seg_json);
   }
   // 初始化 Document 对象
   if (!initDocument(document, page_width, page_height, top_margin, bottom_margin, left_margin, right_margin, segments, segmentCount))
@@ -1605,18 +1605,18 @@ bool parseSegment(struct Segment *segment, cJSON *json)
     // 获取每个 character 对象
     cJSON *char_item = cJSON_GetArrayItem(raw_characters, i);
     // 对该 character 深拷贝（递归拷贝所有子项）
-    cJSON *new_char_json = cJSON_Duplicate(char_item, 1);
-    if (new_char_json != NULL)
+    // cJSON *new_char_json = cJSON_Duplicate(char_item, 1);
+    if (char_item != NULL)
     {
       // new_char_json 就是一个独立的新的 JSON 对象
       // 这里可以传给其它函数处理，比如：
-      if (!parseCharacter(&characters[i], new_char_json))
+      if (!parseCharacter(&characters[i], char_item))
       {
         return false;
       }
     }
     // 使用后释放内存
-    cJSON_Delete(new_char_json);
+    // cJSON_Delete(new_char_json);
   }
   // 初始化 Segment 对象
   if (!initSegment(segment, ascender, descender, line_gap, paragraph_spacing, characters, characterCount))
@@ -1651,7 +1651,9 @@ bool parseCharacter(struct Character *character, cJSON *json)
   // 获取 strokes 数组
   cJSON *raw_strokes = cJSON_GetObjectItem(json, "strokes");
   if (!cJSON_IsArray(raw_strokes))
+  {
     return false;
+  }
 
   int strokeCount = cJSON_GetArraySize(raw_strokes);
   struct Stroke *strokes = (struct Stroke *)malloc(sizeof(struct Stroke) * strokeCount);
@@ -1660,41 +1662,42 @@ bool parseCharacter(struct Character *character, cJSON *json)
     // 获取每个 stroke 对象
     cJSON *stroke_item = cJSON_GetArrayItem(raw_strokes, i);
     // 对该 stroke 深拷贝（递归拷贝所有子项）
-    cJSON *new_stroke_json = cJSON_Duplicate(stroke_item, 1);
-    if (!cJSON_IsArray(new_stroke_json))
+    // cJSON *new_stroke_json = cJSON_Duplicate(stroke_item, 1);
+    if (!cJSON_IsArray(stroke_item))
     {
-      cJSON_free(new_stroke_json);
+      // cJSON_free(new_stroke_json);
       return false;
     }
-    strokes[i].pointCount = cJSON_GetArraySize(new_stroke_json);
+    strokes[i].pointCount = cJSON_GetArraySize(stroke_item);
     strokes[i].points = (struct Point *)malloc(sizeof(struct Point) * strokes[i].pointCount);
     for (int j = 0; j < strokes[i].pointCount; j++)
     {
-      cJSON *point_item = cJSON_GetArrayItem(new_stroke_json, j);
-      cJSON *new_point_json = cJSON_Duplicate(point_item, 1);
-      if (!cJSON_IsArray(new_point_json))
+      cJSON *point_item = cJSON_GetArrayItem(stroke_item, j);
+      // cJSON *new_point_json = cJSON_Duplicate(point_item, 1);
+      if (!cJSON_IsArray(point_item))
       {
-        cJSON_free(new_point_json);
+        HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_RESET);
+        // cJSON_free(new_point_json);
         return false;
       }
-      cJSON *raw_x = cJSON_GetArrayItem(new_point_json, 0);
+      cJSON *raw_x = cJSON_GetArrayItem(point_item, 0);
       if (!cJSON_IsNumber(raw_x))
       {
-        cJSON_free(new_point_json);
+        // cJSON_free(new_point_json);
         return false;
       }
       strokes[i].points[j].x = (float)(raw_x->valuedouble);
-      cJSON *raw_y = cJSON_GetArrayItem(new_point_json, 1);
+      cJSON *raw_y = cJSON_GetArrayItem(point_item, 1);
       if (!cJSON_IsNumber(raw_y))
       {
-        cJSON_free(new_point_json);
+        // cJSON_free(new_point_json);
         return false;
       }
       strokes[i].points[j].y = (float)(raw_y->valuedouble);
-      cJSON_free(new_point_json);
+      // cJSON_free(new_point_json);
     }
     // 使用后释放内存
-    cJSON_Delete(new_stroke_json);
+    // cJSON_Delete(new_stroke_json);
   }
   // 初始化 Character 对象
   if (!initCharacter(character, is_line_feed, advance_width, left_side_bearing, strokes, strokeCount))
