@@ -24,11 +24,15 @@ def send_in_segments(data_bytes, ser, segment_size=32, delay=0.01):
     if total_len % segment_size == 0:
         segments.append(b'\0')
     for idx, seg in enumerate(segments):
-        ser.write(seg)
-        # # 打印当前发送段后的回传信息（调试用）
-        # resp = ser.read_all().decode("utf-8", errors="replace")
-        # if resp:
-        #     print("发送段后回传:", resp)
+        # 循环发送当前段，直到反馈不包含 busy
+        while True:
+            ser.write(seg)
+            resp = ser.read_all().decode("utf-8", errors="replace")
+            if "busy" in resp.lower():
+                print("检测到 busy，重发当前消息...")
+                time.sleep(delay)
+            else:
+                break
         if idx < len(segments) - 1:
             time.sleep(delay)
 

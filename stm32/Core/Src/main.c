@@ -144,8 +144,8 @@ void moveToAbsoluteXY(int32_t target_X, int32_t target_Y);
 void motorControl(int32_t delta_MotorL, int32_t delta_MotorR);
 void updateGlobalXY(float delta_X, float delta_Y);
 
-void drawDocument(struct Document *document);
-void drawSegment(struct Segment *segment, float *Global_X, float *Global_Y, float page_width, float page_height, float top_margin, float bottom_margin, float left_margin, float right_margin, float scale);
+// void drawDocument(struct Document *document);
+// void drawSegment(struct Segment *segment, float *Global_X, float *Global_Y, float page_width, float page_height, float top_margin, float bottom_margin, float left_margin, float right_margin, float scale);
 void drawCharacter(struct Character *character, float startX, float startY, float scale);
 void drawStroke(struct Stroke *stroke);
 
@@ -170,7 +170,7 @@ bool parseSegment(struct Segment *segment, cJSON *json);
 bool parseCharacter(struct Character *character, cJSON *json);
 void processInfo(uint8_t *buffer, uint16_t length);
 void processChar(uint8_t *buffer, uint16_t length);
-void processRpcRequest(uint8_t *buffer, uint16_t length);
+// void processRpcRequest(uint8_t *buffer, uint16_t length);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -233,6 +233,12 @@ int main(void)
     {
       freeAllData(currentDoc);
       currentDoc = NULL;
+      if (currentChar != NULL)
+      {
+        freeCharacter(currentChar);
+        free(currentChar);
+        currentChar = NULL;
+      }
       charBufferIndex = 0;
       infoBufferIndex = 0;
       Global_X = 0;
@@ -240,13 +246,16 @@ int main(void)
       Doc_Global_X = 0;
       Doc_Global_Y = 0;
       charReceived = false; // Fix? : cahrReceived was never reset
+      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET); // LED off
       HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET); // disable
     }
     // 刚接收完 info
     if (infoReceived && currentDoc == NULL && !charReceived)
     {
       processInfo(infoBuffer, infoBufferIndex);
+      infoBufferIndex = 0;
       HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET); // enable
+      HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET); // LED on
       // 以下仿照 drawDocuments 函数
       Doc_Global_X = currentDoc->left_margin;
       Doc_Global_Y = -(currentDoc->top_margin);
@@ -275,8 +284,12 @@ int main(void)
       }
       Doc_Global_Y += currentDoc->segments[0].ascender;
       // TODO: detect if the current position exceeds the bottom edge
-      freeCharacter(currentChar);
-      currentChar = NULL;
+      if (currentChar != NULL)
+      {
+        freeCharacter(currentChar);
+        free(currentChar);
+        currentChar = NULL;
+      }
       charReceived = false;
       CDC_Transmit_FS(READY, 6);
     }
@@ -1066,63 +1079,63 @@ void updateGlobalXY(float delta_X, float delta_Y)
 // having negative Y or not affects greatly on line changing.
 // where the origin is, to be defined
 
-void drawDocument(struct Document *document)
-{
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_RESET);
-  // set the starting position at the top left corner of the page
-  float Global_X = document->left_margin;
-  float Global_Y = -(document->top_margin);
-  float scale = 5; // 1 step = 0.2 mm
+// void drawDocument(struct Document *document)
+// {
+//   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_1, GPIO_PIN_RESET);
+//   // set the starting position at the top left corner of the page
+//   float Global_X = document->left_margin;
+//   float Global_Y = -(document->top_margin);
+//   float scale = 5; // 1 step = 0.2 mm
 
-  penup();
-  // iterate through each segment in the document
-  for (int i = 0; i < document->segmentCount; i++)
-  {
-    struct Segment *segment = &document->segments[i];
+//   penup();
+//   // iterate through each segment in the document
+//   for (int i = 0; i < document->segmentCount; i++)
+//   {
+//     struct Segment *segment = &document->segments[i];
 
-    // check if the segment is empty
-    if (segment->characterCount > 0)
-    {
-      // draw the segment at the current position
-      drawSegment(segment, &Global_X, &Global_Y, document->page_width, document->page_height, document->top_margin, document->bottom_margin, document->left_margin, document->right_margin, scale);
-    }
-  }
-}
+//     // check if the segment is empty
+//     if (segment->characterCount > 0)
+//     {
+//       // draw the segment at the current position
+//       drawSegment(segment, &Global_X, &Global_Y, document->page_width, document->page_height, document->top_margin, document->bottom_margin, document->left_margin, document->right_margin, scale);
+//     }
+//   }
+// }
 
-void drawSegment(struct Segment *segment, float *Global_X,
-                 float *Global_Y, float page_width,
-                 float page_height, float top_margin,
-                 float bottom_margin, float left_margin,
-                 float right_margin, float scale)
-{
-  float current_X = *Global_X;
-  float current_Y = *Global_Y - segment->ascender;
+// void drawSegment(struct Segment *segment, float *Global_X,
+//                  float *Global_Y, float page_width,
+//                  float page_height, float top_margin,
+//                  float bottom_margin, float left_margin,
+//                  float right_margin, float scale)
+// {
+//   float current_X = *Global_X;
+//   float current_Y = *Global_Y - segment->ascender;
 
-  for (int i = 0; i < segment->characterCount; i++)
-  {
-    struct Character *character = &segment->characters[i];
+//   for (int i = 0; i < segment->characterCount; i++)
+//   {
+//     struct Character *character = &segment->characters[i];
 
-    // check if a new line is needed
-    if (current_X + character->advance_width >= page_width - right_margin || character->is_line_feed)
-    {
-      current_X = left_margin;                                                   // reset X position
-      current_Y -= (segment->ascender + segment->descender + segment->line_gap); // move to next line
-    }
-    else
-    {
-      // draw the character at the current position
-      drawCharacter(character, current_X, current_Y, scale);
-      // update the current X position for the next character
-      current_X += character->advance_width;
-    }
-  }
+//     // check if a new line is needed
+//     if (current_X + character->advance_width >= page_width - right_margin || character->is_line_feed)
+//     {
+//       current_X = left_margin;                                                   // reset X position
+//       current_Y -= (segment->ascender + segment->descender + segment->line_gap); // move to next line
+//     }
+//     else
+//     {
+//       // draw the character at the current position
+//       drawCharacter(character, current_X, current_Y, scale);
+//       // update the current X position for the next character
+//       current_X += character->advance_width;
+//     }
+//   }
 
-  current_Y += segment->ascender;
-  // update global XY
-  *Global_X = current_X;
-  *Global_Y = current_Y;
-  // TODO: detect if the current position exceeds the bottom edge
-}
+//   current_Y += segment->ascender;
+//   // update global XY
+//   *Global_X = current_X;
+//   *Global_Y = current_Y;
+//   // TODO: detect if the current position exceeds the bottom edge
+// }
 
 void drawCharacter(struct Character *character, float startX, float startY, float scale)
 {
@@ -1386,120 +1399,120 @@ bool initStroke(struct Stroke *stroke, struct Point *points,
 // The parent structure gains references to the child's data.
 // potentially cause double-free issues or memory leaks to the original pointer.
 
-bool AddSegmentToDocument(struct Document *document, struct Segment *segment)
-{
-  if (document == NULL || segment == NULL)
-    return false; // check for null pointers
+// bool AddSegmentToDocument(struct Document *document, struct Segment *segment)
+// {
+//   if (document == NULL || segment == NULL)
+//     return false; // check for null pointers
 
-  // expand array for new segment (assume the count is always matched with the object in the array)
-  int newCount = document->segmentCount + 1; // dont do ++ here dumbass
-  struct Segment *newSegments;
+//   // expand array for new segment (assume the count is always matched with the object in the array)
+//   int newCount = document->segmentCount + 1; // dont do ++ here dumbass
+//   struct Segment *newSegments;
 
-  if (document->segments == NULL) // no segments beforehand
-  {
-    newSegments = (struct Segment *)malloc(sizeof(struct Segment) * newCount);
-    if (newSegments == NULL)
-      return false; // alloc failed case
-  }
-  else // segments already exist
-  {    // BAD: realloc may need to copy the whole array (actually I dont care)
-    newSegments = (struct Segment *)realloc(document->segments, sizeof(struct Segment) * newCount);
-    if (newSegments == NULL)
-      return false; // alloc failed case
-  }
+//   if (document->segments == NULL) // no segments beforehand
+//   {
+//     newSegments = (struct Segment *)malloc(sizeof(struct Segment) * newCount);
+//     if (newSegments == NULL)
+//       return false; // alloc failed case
+//   }
+//   else // segments already exist
+//   {    // BAD: realloc may need to copy the whole array (actually I dont care)
+//     newSegments = (struct Segment *)realloc(document->segments, sizeof(struct Segment) * newCount);
+//     if (newSegments == NULL)
+//       return false; // alloc failed case
+//   }
 
-  document->segments = newSegments; // copy the new segments array
-  // copy the new segment into the array
-  // BAD: this is a shallow copy, but as long as they work and free without error I dont care
-  document->segments[document->segmentCount] = *segment;
-  document->segmentCount++; // increment the segment count
+//   document->segments = newSegments; // copy the new segments array
+//   // copy the new segment into the array
+//   // BAD: this is a shallow copy, but as long as they work and free without error I dont care
+//   document->segments[document->segmentCount] = *segment;
+//   document->segmentCount++; // increment the segment count
 
-  return true;
-}
+//   return true;
+// }
 
-bool AddCharacterToSegment(struct Segment *segment, struct Character *character)
-{
-  if (segment == NULL || character == NULL)
-    return false;
+// bool AddCharacterToSegment(struct Segment *segment, struct Character *character)
+// {
+//   if (segment == NULL || character == NULL)
+//     return false;
 
-  int newCount = segment->characterCount + 1;
-  struct Character *newCharacters;
+//   int newCount = segment->characterCount + 1;
+//   struct Character *newCharacters;
 
-  if (segment->characters == NULL)
-  {
-    newCharacters = (struct Character *)malloc(sizeof(struct Character) * newCount);
-    if (newCharacters == NULL)
-      return false;
-  }
-  else
-  {
-    newCharacters = (struct Character *)realloc(segment->characters, sizeof(struct Character) * newCount);
-    if (newCharacters == NULL)
-      return false;
-  }
+//   if (segment->characters == NULL)
+//   {
+//     newCharacters = (struct Character *)malloc(sizeof(struct Character) * newCount);
+//     if (newCharacters == NULL)
+//       return false;
+//   }
+//   else
+//   {
+//     newCharacters = (struct Character *)realloc(segment->characters, sizeof(struct Character) * newCount);
+//     if (newCharacters == NULL)
+//       return false;
+//   }
 
-  segment->characters = newCharacters;
-  segment->characters[segment->characterCount] = *character;
-  segment->characterCount++;
+//   segment->characters = newCharacters;
+//   segment->characters[segment->characterCount] = *character;
+//   segment->characterCount++;
 
-  return true;
-}
+//   return true;
+// }
 
-bool AddStrokeToCharacter(struct Character *character, struct Stroke *stroke)
-{
-  if (character == NULL || stroke == NULL)
-    return false;
+// bool AddStrokeToCharacter(struct Character *character, struct Stroke *stroke)
+// {
+//   if (character == NULL || stroke == NULL)
+//     return false;
 
-  int newCount = character->strokeCount + 1;
-  struct Stroke *newStrokes;
+//   int newCount = character->strokeCount + 1;
+//   struct Stroke *newStrokes;
 
-  if (character->strokes == NULL)
-  {
-    newStrokes = (struct Stroke *)malloc(sizeof(struct Stroke) * newCount);
-    if (newStrokes == NULL)
-      return false;
-  }
-  else
-  {
-    newStrokes = (struct Stroke *)realloc(character->strokes, sizeof(struct Stroke) * newCount);
-    if (newStrokes == NULL)
-      return false;
-  }
+//   if (character->strokes == NULL)
+//   {
+//     newStrokes = (struct Stroke *)malloc(sizeof(struct Stroke) * newCount);
+//     if (newStrokes == NULL)
+//       return false;
+//   }
+//   else
+//   {
+//     newStrokes = (struct Stroke *)realloc(character->strokes, sizeof(struct Stroke) * newCount);
+//     if (newStrokes == NULL)
+//       return false;
+//   }
 
-  character->strokes = newStrokes;
-  character->strokes[character->strokeCount] = *stroke;
-  character->strokeCount++;
+//   character->strokes = newStrokes;
+//   character->strokes[character->strokeCount] = *stroke;
+//   character->strokeCount++;
 
-  return true;
-}
+//   return true;
+// }
 
-bool AddPointToStroke(struct Stroke *stroke, struct Point *point)
-{
-  if (stroke == NULL || point == NULL)
-    return false;
+// bool AddPointToStroke(struct Stroke *stroke, struct Point *point)
+// {
+//   if (stroke == NULL || point == NULL)
+//     return false;
 
-  int newCount = stroke->pointCount + 1;
-  struct Point *newPoints;
+//   int newCount = stroke->pointCount + 1;
+//   struct Point *newPoints;
 
-  if (stroke->points == NULL)
-  {
-    newPoints = (struct Point *)malloc(sizeof(struct Point) * newCount);
-    if (newPoints == NULL)
-      return false; // alloc failed case
-  }
-  else
-  {
-    newPoints = (struct Point *)realloc(stroke->points, sizeof(struct Point) * newCount);
-    if (newPoints == NULL)
-      return false; // alloc failed case
-  }
+//   if (stroke->points == NULL)
+//   {
+//     newPoints = (struct Point *)malloc(sizeof(struct Point) * newCount);
+//     if (newPoints == NULL)
+//       return false; // alloc failed case
+//   }
+//   else
+//   {
+//     newPoints = (struct Point *)realloc(stroke->points, sizeof(struct Point) * newCount);
+//     if (newPoints == NULL)
+//       return false; // alloc failed case
+//   }
 
-  stroke->points = newPoints;
-  stroke->points[stroke->pointCount] = *point;
-  stroke->pointCount++;
+//   stroke->points = newPoints;
+//   stroke->points[stroke->pointCount] = *point;
+//   stroke->pointCount++;
 
-  return true;
-}
+//   return true;
+// }
 
 //
 // writing template
@@ -1842,60 +1855,60 @@ void processChar(uint8_t *buffer, uint16_t length)
   }
 }
 
-// RPC 处理函数，解析收到的 JSON 数据并绘制文档
-void processRpcRequest(uint8_t *buffer, uint16_t length)
-{
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
-  // 动态分配缓冲区，确保能够保存整个数据并以 '\0' 结尾
-  char *json_data = (char *)malloc(length + 1);
-  if (json_data == NULL)
-  {
-    const char *error_response = "{\"error\":\"内存分配失败\"}";
-    CDC_Transmit_FS((uint8_t *)error_response, strlen(error_response));
-    return;
-  }
-  memcpy(json_data, buffer, length);
-  json_data[length] = '\0';
+// // RPC 处理函数，解析收到的 JSON 数据并绘制文档
+// void processRpcRequest(uint8_t *buffer, uint16_t length)
+// {
+//   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET);
+//   // 动态分配缓冲区，确保能够保存整个数据并以 '\0' 结尾
+//   char *json_data = (char *)malloc(length + 1);
+//   if (json_data == NULL)
+//   {
+//     const char *error_response = "{\"error\":\"内存分配失败\"}";
+//     CDC_Transmit_FS((uint8_t *)error_response, strlen(error_response));
+//     return;
+//   }
+//   memcpy(json_data, buffer, length);
+//   json_data[length] = '\0';
 
-  cJSON *root = cJSON_Parse(json_data);
-  free(json_data); // 解析后释放动态分配的内存
-  if (root == NULL)
-  {
-    const char *error_response = "{\"error\":\"JSON解析失败\"}";
-    CDC_Transmit_FS((uint8_t *)error_response, strlen(error_response));
-    return;
-  }
+//   cJSON *root = cJSON_Parse(json_data);
+//   free(json_data); // 解析后释放动态分配的内存
+//   if (root == NULL)
+//   {
+//     const char *error_response = "{\"error\":\"JSON解析失败\"}";
+//     CDC_Transmit_FS((uint8_t *)error_response, strlen(error_response));
+//     return;
+//   }
 
-  // 解析 Document 结构（包括页面参数、segments、characters、strokes 等）
-  struct Document *document = (struct Document *)malloc(sizeof(struct Document));
-  if (document == NULL)
-  {
-    const char *error_response = "{\"error\":\"内存分配失败\"}";
-    CDC_Transmit_FS((uint8_t *)error_response, strlen(error_response));
-    cJSON_Delete(root);
-    return;
-  }
-  if (!parseDocument(document, root))
-  {
-    const char *error_response = "{\"error\":\"解析Document失败\"}";
-    CDC_Transmit_FS((uint8_t *)error_response, strlen(error_response));
-    cJSON_Delete(root);
-    return;
-  }
+//   // 解析 Document 结构（包括页面参数、segments、characters、strokes 等）
+//   struct Document *document = (struct Document *)malloc(sizeof(struct Document));
+//   if (document == NULL)
+//   {
+//     const char *error_response = "{\"error\":\"内存分配失败\"}";
+//     CDC_Transmit_FS((uint8_t *)error_response, strlen(error_response));
+//     cJSON_Delete(root);
+//     return;
+//   }
+//   if (!parseDocument(document, root))
+//   {
+//     const char *error_response = "{\"error\":\"解析Document失败\"}";
+//     CDC_Transmit_FS((uint8_t *)error_response, strlen(error_response));
+//     cJSON_Delete(root);
+//     return;
+//   }
 
-  CDC_Transmit_FS(buffer, length);
-  // 调用绘制函数，开始绘制文档（你的 drawDocument() 已定义）
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET); // enable
-  drawDocument(document);
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET); // disable
+//   CDC_Transmit_FS(buffer, length);
+//   // 调用绘制函数，开始绘制文档（你的 drawDocument() 已定义）
+//   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET); // enable
+//   drawDocument(document);
+//   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET); // disable
 
-  // 绘制完成后释放内存（注意本示例中可能需要在实际工程中完善内存管理）
-  freeAllData(document);
+//   // 绘制完成后释放内存（注意本示例中可能需要在实际工程中完善内存管理）
+//   freeAllData(document);
 
-  const char *success_response = "{\"result\":\"绘制完成\"}";
-  CDC_Transmit_FS((uint8_t *)success_response, strlen(success_response));
-  cJSON_Delete(root);
-}
+//   const char *success_response = "{\"result\":\"绘制完成\"}";
+//   CDC_Transmit_FS((uint8_t *)success_response, strlen(success_response));
+//   cJSON_Delete(root);
+// }
 /* USER CODE END 4 */
 
 /**

@@ -50,7 +50,7 @@
   */
 
 /* USER CODE BEGIN PRIVATE_TYPES */
-bool writing = false;
+
 /* USER CODE END PRIVATE_TYPES */
 
 /**
@@ -283,10 +283,10 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
   // HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
 
   // 如果正在进行写操作，则不处理新数据
-  // if (infoReceived && charReceived)
-  // {
-  //   return USBD_OK;
-  // }
+  if (infoReceived && charReceived)
+  {
+    return USBD_BUSY;
+  }
 
   // 正常检查缓冲区空间（此处使用 MAX_JSON_SIZE 作为上限）
   // 注意：这里只做简化示例，实际情况请考虑分开 infoBuffer 与 charBuffer 的错误处理
