@@ -282,6 +282,13 @@ int main(void)
         // 超出 bottom_margin，准备结束
         if (Doc_Global_Y - currentDoc->segments[0].descender < -(currentDoc->page_height - currentDoc->bottom_margin))
         {
+          if (currentChar != NULL)
+          {
+            freeCharacter(currentChar);
+            free(currentChar);
+            currentChar = NULL;
+          }
+          charReceived = false;
           exceedLimit = true;
           continue;
         }
@@ -293,7 +300,6 @@ int main(void)
         Doc_Global_X += currentChar->advance_width;
       }
       Doc_Global_Y += currentDoc->segments[0].ascender;
-      // TODO: detect if the current position exceeds the bottom edge
       if (currentChar != NULL)
       {
         freeCharacter(currentChar);
