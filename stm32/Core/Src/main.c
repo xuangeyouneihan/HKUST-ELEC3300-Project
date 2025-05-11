@@ -297,11 +297,19 @@ int main(void)
     if (HAL_GPIO_ReadPin(GPIOA, GPIO_PIN_0))
     {
       drawFu();
+      Global_X = 0;
+      Global_Y = 0;
+      Doc_Global_X = 0;
+      Doc_Global_Y = 0;
     }
     if (HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13))
     {
       drawCircle();
       drawRegularPentagon();
+      Global_X = 0;
+      Global_Y = 0;
+      Doc_Global_X = 0;
+      Doc_Global_Y = 0;
     }
     /* USER CODE END WHILE */
 
@@ -570,17 +578,29 @@ void drawFu()
   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET); // enable
 
   // legacyMove(3, 3000, 1);
-  moveAngle(300, 315);
-  HAL_Delay(50);
+  moveAngle(375, 315);
+  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+  HAL_Delay(5);
+  HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_1);
+  HAL_Delay(45);
   // legacyMove(5, 3000, 1);
-  moveAngle(300, 225);
-  HAL_Delay(50);
+  moveAngle(375, 225);
+  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+  HAL_Delay(5);
+  HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_1);
+  HAL_Delay(45);
   // legacyMove(7, 3000, 1);
-  moveAngle(300, 135);
-  HAL_Delay(50);
+  moveAngle(375, 135);
+  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+  HAL_Delay(5);
+  HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_1);
+  HAL_Delay(45);
   // legacyMove(1, 3000, 1);
-  moveAngle(300, 45);
-  HAL_Delay(50);
+  moveAngle(375, 45);
+  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
+  HAL_Delay(5);
+  HAL_TIM_PWM_Stop(&htim1, TIM_CHANNEL_1);
+  HAL_Delay(45);
 
   penup();
   HAL_Delay(50);
