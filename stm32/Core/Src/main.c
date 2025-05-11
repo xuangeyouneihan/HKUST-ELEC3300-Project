@@ -1842,6 +1842,8 @@ void processChar(uint8_t *buffer, uint16_t length)
     cJSON_Delete(char_root);
     return;
   }
+
+  cJSON_Delete(char_root); //Fix? : Json was not freed after parseCharacter!
 }
 
 // // RPC 处理函数，解析收到的 JSON 数据并绘制文档
