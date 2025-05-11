@@ -1577,7 +1577,9 @@ bool parseDocument(struct Document *document, cJSON *json)
     return false;
 
   int segmentCount = cJSON_GetArraySize(raw_segments);
-  struct Segment *segments = (struct Segment *)malloc(sizeof(struct Segment) * segmentCount);
+  struct Segment *segments = NULL;
+  if (segmentCount > 0)
+    segments = (struct Segment *)malloc(sizeof(struct Segment) * segmentCount);
   // 以下可能有问题
   for (int i = 0; i < segmentCount; i++)
   {
@@ -1644,7 +1646,9 @@ bool parseSegment(struct Segment *segment, cJSON *json)
     return false;
 
   int characterCount = cJSON_GetArraySize(raw_characters);
-  struct Character *characters = (struct Character *)malloc(sizeof(struct Character) * characterCount);
+  struct Character *characters = NULL;
+  if (characterCount > 0)
+    characters = (struct Character *)malloc(sizeof(struct Character) * characterCount);
   for (int i = 0; i < characterCount; i++)
   {
     // 获取每个 character 对象
@@ -1701,7 +1705,9 @@ bool parseCharacter(struct Character *character, cJSON *json)
   }
 
   int strokeCount = cJSON_GetArraySize(raw_strokes);
-  struct Stroke *strokes = (struct Stroke *)malloc(sizeof(struct Stroke) * strokeCount);
+  struct Stroke *strokes = NULL;
+  if (strokeCount > 0)
+    strokes = (struct Stroke *)malloc(sizeof(struct Stroke) * strokeCount);
   for (int i = 0; i < strokeCount; i++)
   {
     // 获取每个 stroke 对象
@@ -1714,7 +1720,10 @@ bool parseCharacter(struct Character *character, cJSON *json)
       return false;
     }
     strokes[i].pointCount = cJSON_GetArraySize(stroke_item);
-    strokes[i].points = (struct Point *)malloc(sizeof(struct Point) * strokes[i].pointCount);
+    if (strokes[i].pointCount > 0)
+      strokes[i].points = (struct Point *)malloc(sizeof(struct Point) * strokes[i].pointCount);
+    else
+      strokes[i].points = NULL;
     for (int j = 0; j < strokes[i].pointCount; j++)
     {
       cJSON *point_item = cJSON_GetArrayItem(stroke_item, j);
