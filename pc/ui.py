@@ -331,7 +331,7 @@ ttk.Label(frame_font, text="字体大小:").grid(row=0, column=0, padx=5, pady=2
 font_size_var = tk.StringVar(value="48")
 entry_font_size = ttk.Entry(frame_font, textvariable=font_size_var, width=10)
 entry_font_size.grid(row=0, column=1, padx=5, pady=2, sticky="w")
-line_gap_adjust_var = tk.StringVar(value="10")
+line_gap_adjust_var = tk.StringVar(value="15")
 ttk.Label(frame_font, text="行距调整:").grid(row=1, column=0, padx=5, pady=2, sticky="e")
 line_gap_adjust_entry = ttk.Entry(frame_font, textvariable=line_gap_adjust_var, width=10)
 line_gap_adjust_entry.grid(row=1, column=1, padx=5, pady=2, sticky="w")
