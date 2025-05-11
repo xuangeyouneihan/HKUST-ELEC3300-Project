@@ -1801,6 +1801,7 @@ void processInfo(uint8_t *buffer, uint16_t length)
     cJSON_Delete(info_root);
     return;
   }
+  cJSON_Delete(info_root);
 }
 
 void processChar(uint8_t *buffer, uint16_t length)
