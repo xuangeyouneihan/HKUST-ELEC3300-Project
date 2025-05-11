@@ -144,6 +144,9 @@ void moveToAbsoluteXY(int32_t target_X, int32_t target_Y);
 void motorControl(int32_t delta_MotorL, int32_t delta_MotorR);
 void updateGlobalXY(float delta_X, float delta_Y);
 
+// DISCARED: due to very limited ram in the stm32 chip, 
+//           it is impossible to allocate a large array for the document
+
 // void drawDocument(struct Document *document);
 // void drawSegment(struct Segment *segment, float *Global_X, float *Global_Y, float page_width, float page_height, float top_margin, float bottom_margin, float left_margin, float right_margin, float scale);
 void drawCharacter(struct Character *character, float startX, float startY, float scale);
@@ -1074,6 +1077,11 @@ void updateGlobalXY(float delta_X, float delta_Y)
 // amement: page function discarded, there is no auto paper feeder for that
 //
 
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+// DISCARED: due to very limited ram in the stm32 chip, 
+//           it is impossible to allocate a large array for the document
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 // PROBLEM:
 // The coordinate systems is not sattled yet.
 // having negative Y or not affects greatly on line changing.
@@ -1393,6 +1401,11 @@ bool initStroke(struct Stroke *stroke, struct Point *points,
 // use these functions to add data in empty structures, or add new data
 // CAUTION: the is no chain adding atm, do them in main
 
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+// DISCARED: due to very limited ram in the stm32 chip, 
+//           it is impossible to allocate a large array for the document
+// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
 // WARNING: **CONSIDER REBOOT OVER FREE ATM**
 // Mem ownership:
 // - Add functions perform shallow copies. After calling:
@@ -1512,39 +1525,6 @@ bool initStroke(struct Stroke *stroke, struct Point *points,
 //   stroke->pointCount++;
 
 //   return true;
-// }
-
-//
-// writing template
-//
-// WANRING: NO DATA IS FREED!!! REBOOT AFTER USE!!!
-
-// void drawOneStrokeFromDoc()
-// {
-//   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_RESET); // enable
-
-//   struct Document *doc = CreateDocument(1, 297.0f, 20.0f, 20.0f, 20.0f, 20.0f, 210.0f); // A4 size in mm
-//   struct Segment *seg = CreateSegment(1, 10.0f, 3.0f, 2.0f, 5.0f);
-//   struct Character *chara = CreateCharacter(1, 12.0f, 1.0f, false);
-//   struct Stroke *stroke = CreateStroke(2);
-
-//   struct Point pointA1_1 = {0.0f, 0.0f};
-//   struct Point pointA1_2 = {10.0f, -10.0f};
-
-//   AddPointToStroke(stroke, &pointA1_1);
-//   AddPointToStroke(stroke, &pointA1_2);
-
-//   AddStrokeToCharacter(chara, stroke);
-
-//   AddCharacterToSegment(seg, chara);
-
-//   AddSegmentToDocument(doc, seg);
-
-//   drawDocument(doc);
-
-//   // WANRING: NO DATA IS FREED!!! REBOOT AFTER USE!!!
-
-//   HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET); // disable
 // }
 
 //
@@ -1839,7 +1819,7 @@ void processChar(uint8_t *buffer, uint16_t length)
 
   // 解析 Character 结构（包括 strokes、points 等）
   currentChar = (struct Character *)malloc(sizeof(struct Character));
-  if (currentDoc == NULL)
+  if (currentChar == NULL) // Fix? : wrong variable 
   {
     const char *error_response = "{\"error\":\"内存分配失败\"}";
     CDC_Transmit_FS((uint8_t *)error_response, strlen(error_response));
