@@ -77,7 +77,8 @@ def send_to_cdc(out_json, com_port, baudrate=9600):
         send_in_segments(data_bytes, ser, segment_size=32, delay=0.01)
         # 发送初始消息后等待对方发送 "114514" 信号，再开始发送第1个 character
         print("已发送初始消息，等待 '114514' 信号以开始发送第 1 个 character ...")
-        wait_for_signal(ser, "114514", timeout=None)
+        if not wait_for_signal(ser, "114514", timeout=10):
+            return False, "等待超时"
         
         # 直接进入发送每个 character 的流程
         for idx, char_item in enumerate(characters):
@@ -87,7 +88,8 @@ def send_to_cdc(out_json, com_port, baudrate=9600):
             send_in_segments(data_bytes, ser, segment_size=32, delay=0.01)
             # 发送完当前 character 后，等待对方传来"114514"以继续
             print(f"已发送第 {idx+1} 个 character，等待 '114514' 信号以继续...")
-            wait_for_signal(ser, "114514", timeout=None)
+            if not wait_for_signal(ser, "114514", timeout=10):
+                return False, "等待超时"
         
         # 发送完所有 character 后，发送 "1919810" 信号以结束写字
         print("所有 character 已发送，发送 '1919810' 信号以结束写字...")

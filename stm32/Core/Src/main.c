@@ -125,6 +125,7 @@ struct Character *currentChar = NULL;
 float Doc_Global_X = 0;
 float Doc_Global_Y = 0;
 float scale = 5;
+bool exceedLimit = false;
 
 /* USER CODE END PV */
 
@@ -230,7 +231,7 @@ int main(void)
   while (1)
   {
     // 写字结束 // Anchor
-    if (!infoReceived && currentDoc != NULL)
+    if ((!infoReceived && currentDoc != NULL) || exceedLimit)
     {
       freeAllData(currentDoc);
       currentDoc = NULL;
@@ -246,7 +247,9 @@ int main(void)
       Global_Y = 0;
       Doc_Global_X = 0;
       Doc_Global_Y = 0;
-      charReceived = false; // Fix? : cahrReceived was never reset
+      infoReceived = false;
+      charReceived = false; // Fix? : charReceived was never reset
+      exceedLimit = false;
       HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_SET); // LED off
       HAL_GPIO_WritePin(GPIOC, GPIO_PIN_7, GPIO_PIN_SET); // disable
     }
@@ -276,6 +279,12 @@ int main(void)
       {
         Doc_Global_X = currentDoc->left_margin;
         Doc_Global_Y -= (currentDoc->segments[0].ascender + currentDoc->segments[0].descender + currentDoc->segments[0].line_gap);
+        // 超出 bottom_margin，准备结束
+        if (Doc_Global_Y - currentDoc->segments[0].descender < -(currentDoc->page_height - currentDoc->bottom_margin))
+        {
+          exceedLimit = true;
+          continue;
+        }
       }
       // 超出右边距也不能吞字
       if (!(currentChar->is_line_feed))
