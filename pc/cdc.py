@@ -56,7 +56,7 @@ def send_to_cdc(out_json, com_port, baudrate=9600):
     修改后的逻辑：
       1. 首先将原 JSON 中 segments 内 characters 清空后发送；
       2. 然后逐个发送 characters 内的项，每发送完一个后立即停止传输，直到检测到对方传来 "114514" 才继续发送下一个；
-      3. 最后发送完所有 character 后，若对方再次传来 "114514"，则发送 "810" 表示此次写字结束。
+      3. 最后发送完所有 character 后，若对方再次传来 "114514"，则发送 "1919810" 表示此次写字结束。
     
     返回 (success, message) tuple
     """
@@ -86,7 +86,7 @@ def send_to_cdc(out_json, com_port, baudrate=9600):
             data_bytes = json_message.encode("utf-8")
             send_in_segments(data_bytes, ser, segment_size=32, delay=0.01)
             # 发送完当前 character 后，等待对方传来"114514"以继续
-            print(f"已发送第 {idx+1} 个character，等待 '114514' 信号以继续...")
+            print(f"已发送第 {idx+1} 个 character，等待 '114514' 信号以继续...")
             wait_for_signal(ser, "114514", timeout=None)
         
         # 发送完所有 character 后，发送 "1919810" 信号以结束写字

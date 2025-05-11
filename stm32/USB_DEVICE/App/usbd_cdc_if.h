@@ -52,49 +52,49 @@
 #define APP_RX_DATA_SIZE  1024
 #define APP_TX_DATA_SIZE  1024
 /* USER CODE BEGIN EXPORTED_DEFINES */
-#define MAX_JSON_SIZE 16384
+// #define MAX_JSON_SIZE 16384
 #define SEGMENT_SIZE 32
-#define JSON_TIMEOUT 100
+// #define JSON_TIMEOUT 100
 #define MAX_INFO_SIZE 256
-#define MAX_CHAR_SIZE 1024
+#define MAX_CHAR_SIZE 4096
 #define READY "114514"
 #define FINISH "1919810"
 /* USER CODE END EXPORTED_DEFINES */
 
 /**
-* @}
-*/
+  * @}
+  */
 
 /** @defgroup USBD_CDC_IF_Exported_Types USBD_CDC_IF_Exported_Types
-* @brief Types.
-* @{
-*/
+  * @brief Types.
+  * @{
+  */
 
 /* USER CODE BEGIN EXPORTED_TYPES */
 
 /* USER CODE END EXPORTED_TYPES */
 
 /**
-* @}
-*/
+  * @}
+  */
 
 /** @defgroup USBD_CDC_IF_Exported_Macros USBD_CDC_IF_Exported_Macros
-* @brief Aliases.
-* @{
-*/
+  * @brief Aliases.
+  * @{
+  */
 
 /* USER CODE BEGIN EXPORTED_MACRO */
 
 /* USER CODE END EXPORTED_MACRO */
 
 /**
-* @}
-*/
+  * @}
+  */
 
 /** @defgroup USBD_CDC_IF_Exported_Variables USBD_CDC_IF_Exported_Variables
-* @brief Public variables.
-* @{
-*/
+  * @brief Public variables.
+  * @{
+  */
 
 /** CDC Interface callback. */
 extern USBD_CDC_ItfTypeDef USBD_Interface_fops_FS;
@@ -112,34 +112,34 @@ extern bool charReceived; // 当收到 charBuffer 完整数据后置 true
 /* USER CODE END EXPORTED_VARIABLES */
 
 /**
-* @}
-*/
+  * @}
+  */
 
 /** @defgroup USBD_CDC_IF_Exported_FunctionsPrototype USBD_CDC_IF_Exported_FunctionsPrototype
-* @brief Public functions declaration.
-* @{
-*/
+  * @brief Public functions declaration.
+  * @{
+  */
 
-uint8_t CDC_Transmit_FS(uint8_t *Buf, uint16_t Len);
+uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len);
 
 /* USER CODE BEGIN EXPORTED_FUNCTIONS */
 
 /* USER CODE END EXPORTED_FUNCTIONS */
 
 /**
-* @}
-*/
+  * @}
+  */
 
 /**
-* @}
-*/
+  * @}
+  */
 
 /**
-* @}
-*/
+  * @}
+  */
 
 #ifdef __cplusplus
- }
+}
 #endif
 
 #endif /* __USBD_CDC_IF_H__ */
