@@ -5,11 +5,6 @@ import json
 import unicodedata
 from fontTools.ttLib import TTFont, TTCollection
 import os
-import cv2
-import numpy as np
-import freetype
-from skimage.morphology import medial_axis
-import io
 
 def pt_to_mm(points):
     """
@@ -351,7 +346,7 @@ def get_stroke_points_in_mm(font, char, point_size, allow_closed_paths=False):
 def get_skeletonized_stroke_points_in_mm(font_path, char, point_size):
     """
     利用 freetype-py 渲染字符生成二值图像，
-    然后采用 skimage.morphology.skeletonize 进行骨架化，
+    然后采用 skimage.morphology.medial_axis 进行骨架化，
     接着利用 cv2.findContours 分离轮廓，并通过 cv2.approxPolyDP 简化点集，
     最后将像素坐标转换为毫米（假设 1 像素 = 0.1 毫米，即 factor = 10）。
 
@@ -366,9 +361,11 @@ def get_skeletonized_stroke_points_in_mm(font_path, char, point_size):
       point_size: 目标字号（单位：point）
     """
     import io
-    from skimage.morphology import skeletonize
-    from fontTools.ttLib import TTFont
+    from skimage.morphology import medial_axis
     from fontTools.pens.boundsPen import BoundsPen
+    import freetype
+    import cv2
+    import numpy as np
 
     # 定义转换因子：1毫米 = 10像素 => 1像素 ≈ 0.1 毫米
     factor = 10
@@ -379,7 +376,6 @@ def get_skeletonized_stroke_points_in_mm(font_path, char, point_size):
         font_bytes = io.BytesIO(f.read())
 
     # 使用 freetype 渲染字符
-    import freetype
     face = freetype.Face(font_bytes)
     face.set_char_size(int(point_size * 64))
     face.load_char(char, freetype.FT_LOAD_RENDER)

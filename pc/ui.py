@@ -1,10 +1,7 @@
 import tkinter as tk
-import tkinter.font as tkfont
 from tkinter import ttk, messagebox, filedialog, simpledialog
 import json
 import os
-from matplotlib import font_manager
-import numpy as np
 
 # 引入已有的 prepare_writing_robot_data 函数
 from font_process import prepare_writing_robot_data
@@ -13,10 +10,6 @@ from cdc import send_to_cdc, get_available_cdc_ports
 global root, paper_var, page_width_var, page_height_var, top_margin_var, bottom_margin_var
 global left_margin_var, right_margin_var, font_size_var, font_family_var, font_path_var
 global text_input, paper_menu, font_select_combo
-
-# 使用 matplotlib 获取系统中所有字体，并构造字体名称到字体路径的映射字典
-FONT_DICT = {f.name: f.fname for f in font_manager.fontManager.ttflist}
-available_fonts = sorted(FONT_DICT.keys())
 
 # 全局字体文件默认路径（这里默认使用映射字典中的 Arial 字体，如果存在）
 BASE_DIR = os.path.dirname(__file__)

@@ -1,0 +1,6 @@
+fonttools
+pyserial
+# scikit-image
+# freetype-py
+# opencv-python
+# numpy

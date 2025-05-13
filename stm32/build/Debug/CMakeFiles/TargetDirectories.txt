@@ -1,7 +1,0 @@
-C:/Users/xuang/Documents/Courses/ELEC3300/HKUST-ELEC3300-Project/stm32/build/Debug/CMakeFiles/HKUST-ELEC3300-Project.dir
-C:/Users/xuang/Documents/Courses/ELEC3300/HKUST-ELEC3300-Project/stm32/build/Debug/CMakeFiles/edit_cache.dir
-C:/Users/xuang/Documents/Courses/ELEC3300/HKUST-ELEC3300-Project/stm32/build/Debug/CMakeFiles/rebuild_cache.dir
-C:/Users/xuang/Documents/Courses/ELEC3300/HKUST-ELEC3300-Project/stm32/build/Debug/cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir
-C:/Users/xuang/Documents/Courses/ELEC3300/HKUST-ELEC3300-Project/stm32/build/Debug/cmake/stm32cubemx/CMakeFiles/USB_Device_Library.dir
-C:/Users/xuang/Documents/Courses/ELEC3300/HKUST-ELEC3300-Project/stm32/build/Debug/cmake/stm32cubemx/CMakeFiles/edit_cache.dir
-C:/Users/xuang/Documents/Courses/ELEC3300/HKUST-ELEC3300-Project/stm32/build/Debug/cmake/stm32cubemx/CMakeFiles/rebuild_cache.dir
