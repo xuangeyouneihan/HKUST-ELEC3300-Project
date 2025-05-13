@@ -2,11 +2,13 @@
 
 [简体中文](README.md)
 
-**Note: The original document is in Simplified Chinese, and this document is translated by DeepSeek from the Chinese document. In case of conflict, the Chinese document prevails.**
+**Note: The original document is in Simplified Chinese, and this document is translated by DeepSeek from the Chinese document. In case of conflict, the Chinese document prevails**
 
 ![Preview](preview.jpg)
 
-Embedded development course project for ELEC3300 at The Hong Kong University of Science and Technology. This is a toy-level implementation of a writing robot using Embedfire 指南者 (STM32F103VET6) development board, A4988 drivers, NEMA 17 stepper motors, and hardware structure design from [大鱼DIY](https://space.bilibili.com/488684813) Writing Robot.
+Embedded development course project for ELEC3300 at The Hong Kong University of Science and Technology. This is a toy-level implementation of a writing robot using Embedfire 指南者 (STM32F103VET6) development board, A4988 drivers, NEMA 17 stepper motors, and hardware structure design from [大鱼DIY](https://space.bilibili.com/488684813) Writing Robot
+
+⚠ Shit Code Warning ⚠: During the development of this project, we repeatedly changed directions and accumulated numerous obsolete functions/features. Proceed with caution
 
 ## Features
 
