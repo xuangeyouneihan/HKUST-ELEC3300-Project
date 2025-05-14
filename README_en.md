@@ -6,20 +6,20 @@
 
 ![Preview](preview.jpg)
 
-Embedded development course project for ELEC3300 at The Hong Kong University of Science and Technology. This is a toy-level implementation of a writing robot using Embedfire 指南者 (STM32F103VET6) development board, A4988 drivers, NEMA 17 stepper motors, and hardware structure design from [大鱼DIY](https://space.bilibili.com/488684813) Writing Robot
+Embedded development course project for ELEC3300 at The Hong Kong University of Science and Technology. This is a toy-level implementation of a writing robot using Embedfire 指南者 (STM32F103VET6) development board, A4988 drivers, NEMA 17 stepper motors, and hardware structure design from [大鱼DIY](https://space.bilibili.com/488684813)'s [雕绘仪 EP V3.0](https://pan.baidu.com/s/1wBdC_AXTG9MiqUlSJeqb9A?pwd=EP30)
 
 ⚠ Shit Code Warning ⚠: During the development of this project, we repeatedly changed directions and accumulated numerous obsolete functions/features. Proceed with caution
 
 ## Features
 
-- Press K1 to draw a creepy Chinese "福" (Fu) character
+- Press K1 to draw a creepy Chinese "福" character
 - Press K2 to draw a circle and a regular pentagon
 - Use the PC-side UI in [pc folder](pc) to control robot writing via USB CDC (supports specific fonts only)
 
 ## Compilation and Usage
 
 ### Hardware Setup
-The hardware design is based on [大鱼DIY](https://space.bilibili.com/488684813) writing robot. Assembly instructions can be found in [his video](https://www.bilibili.com/video/BV1cK411X7aa) (Note: Our implementation has much slower writing speed and much fewer features compared to original design, since this is only a course project). Three A4988 drivers should be installed on X, Y, Z slots of CNC Shield:
+The hardware design is based on [大鱼DIY](https://space.bilibili.com/488684813)'s [雕绘仪 EP V3.0](https://pan.baidu.com/s/1wBdC_AXTG9MiqUlSJeqb9A?pwd=EP30). Assembly instructions can be found in [his video](https://www.bilibili.com/video/BV1cK411X7aa) (Note: Our implementation has much slower writing speed and much fewer features compared to original design, since this is only a course project). Three A4988 drivers should be installed on X, Y, Z slots of CNC Shield:
 - X: Right-top motor
 - Y: Left-top motor
 - Z: Pen lifting motor
@@ -69,7 +69,7 @@ The PC program in [pc folder](pc) requires:
 
 Note: 
 - For skeletonization feature, uncomment dependencies in [requirements.txt](pc/requirements.txt) (though the feature is undesirable)
-- Font changing is not recommended due to TTF contour processing limitations, and when we found Hershey fonts, it was no longer feasible to implement corresponding logic within the time constraints
+- Font changing is not recommended due to TTF contour processing limitations, and when we found Hershey fonts, it was no longer feasible to implement corresponding logic within the time constraints. Also, we failed to migrate [Grbl](https://github.com/gnea/grbl) to STM32
 - [test.py](pc/test.py) and [example.json](pc/example.json) are for testing purposes
 
 ## Authors
@@ -80,6 +80,6 @@ Note:
 
 ## Acknowledgements
 
-- [大鱼DIY](https://space.bilibili.com/488684813): Original hardware design
-- [cJSON](https://github.com/DaveGamble/cJSON): Lightweight JSON parser for STM32
+- [大鱼DIY](https://space.bilibili.com/488684813) and his [雕绘仪 EP V3.0](https://pan.baidu.com/s/1wBdC_AXTG9MiqUlSJeqb9A?pwd=EP30): Original hardware design (Well, we don't know what license the original robot used)
+- [cJSON](https://github.com/DaveGamble/cJSON): Lightweight JSON parser for STM32 (MIT license)
 - ELEC3300 teaching team at HKUST
